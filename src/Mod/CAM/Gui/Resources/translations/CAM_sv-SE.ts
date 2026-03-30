@@ -4281,37 +4281,37 @@ Kan vara användbart för operationer med flera profiler, t.ex. ficka med ZigZag
       <location filename="../../../Path/Dressup/Gui/LeadInOut.py" line="121"/>
       <location filename="../../../Path/Dressup/Gui/LeadInOut.py" line="313"/>
       <source>Angle of the Lead-In (1..90)</source>
-      <translation type="unfinished">Angle of the Lead-In (1..90)</translation>
+      <translation>Inledningsvinkel (1..90)</translation>
     </message>
     <message>
       <location filename="../../../Path/Dressup/Gui/LeadInOut.py" line="127"/>
       <location filename="../../../Path/Dressup/Gui/LeadInOut.py" line="321"/>
       <source>Angle of the Lead-Out (1..90)</source>
-      <translation type="unfinished">Angle of the Lead-Out (1..90)</translation>
+      <translation>Utledningsvinkel (1..90)</translation>
     </message>
     <message>
       <location filename="../../../Path/Dressup/Gui/LeadInOut.py" line="133"/>
       <location filename="../../../Path/Dressup/Gui/LeadInOut.py" line="350"/>
       <source>Determine length of the Lead-In</source>
-      <translation type="unfinished">Determine length of the Lead-In</translation>
+      <translation>Bestäm längden på Inledning</translation>
     </message>
     <message>
       <location filename="../../../Path/Dressup/Gui/LeadInOut.py" line="139"/>
       <location filename="../../../Path/Dressup/Gui/LeadInOut.py" line="365"/>
       <source>Determine length of the Lead-Out</source>
-      <translation type="unfinished">Determine length of the Lead-Out</translation>
+      <translation>Bestäm längden på Utledning</translation>
     </message>
     <message>
       <location filename="../../../Path/Dressup/Gui/LeadInOut.py" line="145"/>
       <location filename="../../../Path/Dressup/Gui/LeadInOut.py" line="390"/>
       <source>Invert Lead-In direction</source>
-      <translation type="unfinished">Invert Lead-In direction</translation>
+      <translation>Vänd om Inledningsriktning</translation>
     </message>
     <message>
       <location filename="../../../Path/Dressup/Gui/LeadInOut.py" line="151"/>
       <location filename="../../../Path/Dressup/Gui/LeadInOut.py" line="397"/>
       <source>Invert Lead-Out direction</source>
-      <translation type="unfinished">Invert Lead-Out direction</translation>
+      <translation>Vänd om Utledningsriktning</translation>
     </message>
     <message>
       <location filename="../../../Path/Dressup/Gui/LeadInOut.py" line="157"/>
@@ -4592,13 +4592,13 @@ Större värden (längre till höger) ger snabbare beräkningar; mindre värden 
     <message>
       <location filename="../../../Path/Op/Adaptive.py" line="1837"/>
       <source>Orders cuts by region instead of depth. This property is only used if the ModelAwareExperiment is enabled.</source>
-      <translation type="unfinished">Orders cuts by region instead of depth. This property is only used if the ModelAwareExperiment is enabled.</translation>
+      <translation>Ordnar snitt efter område istället för djup. Denna egenskap används endast om ModelAwareExperiment än aktiverat.</translation>
     </message>
     <message>
       <location filename="../../../Path/Op/Adaptive.py" line="1852"/>
       <location filename="../../../Path/Op/Adaptive.py" line="1958"/>
       <source>Enable the experimental model awareness feature to respect 3D geometry and prevent cutting under overhangs</source>
-      <translation type="unfinished">Enable the experimental model awareness feature to respect 3D geometry and prevent cutting under overhangs</translation>
+      <translation>Aktiverar den experimentella modellmedvetenhetsfunktionen för att respektera 3D-geometri och förebygga snitt under överhängande delar</translation>
     </message>
     <message>
       <location filename="../../../Path/Op/Adaptive.py" line="1947"/>
@@ -6388,7 +6388,7 @@ Välj en eller flera vertikala ytor för att söka efter slingytor som bildar v�
     <message>
       <location filename="../panels/DressUpLeadInOutEdit.ui" line="26"/>
       <source>Lead In</source>
-      <translation type="unfinished">Lead In</translation>
+      <translation>Inledning</translation>
     </message>
     <message>
       <location filename="../panels/DressUpLeadInOutEdit.ui" line="70"/>
@@ -6405,7 +6405,7 @@ Välj en eller flera vertikala ytor för att söka efter slingytor som bildar v�
     <message>
       <location filename="../panels/DressUpLeadInOutEdit.ui" line="80"/>
       <source>Offset Entrance Location</source>
-      <translation type="unfinished">Offset Entrance Location</translation>
+      <translation>Förskjut Ingångsplats</translation>
     </message>
     <message>
       <location filename="../panels/DressUpLeadInOutEdit.ui" line="90"/>
@@ -6416,12 +6416,12 @@ Välj en eller flera vertikala ytor för att söka efter slingytor som bildar v�
     <message>
       <location filename="../panels/DressUpLeadInOutEdit.ui" line="102"/>
       <source>Lead Out</source>
-      <translation type="unfinished">Lead Out</translation>
+      <translation>Utledning</translation>
     </message>
     <message>
       <location filename="../panels/DressUpLeadInOutEdit.ui" line="156"/>
       <source>Offset Exit Location</source>
-      <translation type="unfinished">Offset Exit Location</translation>
+      <translation>Förskjut utgångsplats</translation>
     </message>
     <message>
       <location filename="../panels/DressUpLeadInOutEdit.ui" line="189"/>
@@ -6501,12 +6501,12 @@ Välj en eller flera vertikala ytor för att söka efter slingytor som bildar v�
     <message>
       <location filename="../../../Path/Dressup/Gui/LeadInOut.py" line="251"/>
       <source>Tool controller not selected for base operation: %s</source>
-      <translation type="unfinished">Tool controller not selected for base operation: %s</translation>
+      <translation>Verktygskontroll ej vald för grundanvändning: %s</translation>
     </message>
     <message>
       <location filename="../../../Path/Dressup/Gui/LeadInOut.py" line="1399"/>
       <source>Creates entry and exit motions for a selected path</source>
-      <translation type="unfinished">Creates entry and exit motions for a selected path</translation>
+      <translation>Skapar in- och utgångsrörelser för en vald väg</translation>
     </message>
     <message>
       <location filename="../../../Path/Dressup/Gui/LeadInOut.py" line="1422"/>
@@ -7007,7 +7007,7 @@ Välj en eller flera vertikala ytor för att söka efter slingytor som bildar v�
     <message>
       <location filename="../../../Path/Main/Gui/JobDlg.py" line="523"/>
       <source>Box: %.2f x %.2f x %.2f</source>
-      <translation type="unfinished">Box: %.2f x %.2f x %.2f</translation>
+      <translation>Låda: %.2f x %.2f x %.2f</translation>
     </message>
     <message>
       <location filename="../../../Path/Main/Gui/JobDlg.py" line="538"/>
@@ -7397,7 +7397,7 @@ Välj en eller flera vertikala ytor för att söka efter slingytor som bildar v�
     <message>
       <location filename="../../../Path/Main/Gui/SanityCmd.py" line="54"/>
       <source>Sanity Check</source>
-      <translation type="unfinished">Sanity Check</translation>
+      <translation>Sundhetskoll</translation>
     </message>
     <message>
       <location filename="../../../Path/Main/Gui/SanityCmd.py" line="56"/>
@@ -8522,7 +8522,7 @@ Detta kommer inte att radera verktygsbitarna som finns i det.</translation>
     <message>
       <location filename="../../../Path/Op/Gui/Vcarve.py" line="222"/>
       <source>Vcarve</source>
-      <translation type="unfinished">Vcarve</translation>
+      <translation>V-snitt</translation>
     </message>
     <message>
       <location filename="../../../Path/Op/Gui/Vcarve.py" line="223"/>
@@ -9373,17 +9373,17 @@ Detta kommer inte att radera verktygsbitarna som finns i det.</translation>
     <message>
       <location filename="../../../Path/Tool/shape/models/taperedballnose.py" line="55"/>
       <source>Included Taper angle</source>
-      <translation type="unfinished">Included Taper angle</translation>
+      <translation>Inkluderad avsmalningsvinkel</translation>
     </message>
     <message>
       <location filename="../../../Path/Tool/shape/models/taperedballnose.py" line="59"/>
       <source>Diameter at top of Taper</source>
-      <translation type="unfinished">Diameter at top of Taper</translation>
+      <translation>Diameter vid topp av avsmalning</translation>
     </message>
     <message>
       <location filename="../../../Path/Tool/shape/models/taperedballnose.py" line="67"/>
       <source>Tapered Ball Nose</source>
-      <translation type="unfinished">Tapered Ball Nose</translation>
+      <translation>Avsmalnande kulnos</translation>
     </message>
   </context>
   <context>

@@ -958,54 +958,54 @@ ungültigen Randbedingungen und degenerierter Geometrie</translation>
   <context>
     <name>Exceptions</name>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6796"/>
+      <location filename="../../../App/SketchObject.cpp" line="6802"/>
       <source>You are requesting no change in knot multiplicity.</source>
       <translation>Es wird keine Änderung in der Vielfachheit der Knoten gefordert.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6788"/>
-      <location filename="../../../App/SketchObject.cpp" line="6966"/>
+      <location filename="../../../App/SketchObject.cpp" line="6794"/>
+      <location filename="../../../App/SketchObject.cpp" line="6972"/>
       <source>B-spline Geometry Index (GeoID) is out of bounds.</source>
       <translation>B-Spline Geometrie Index (GeoID) ist außerhalb des gültigen Bereichs.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6805"/>
-      <location filename="../../../App/SketchObject.cpp" line="6982"/>
+      <location filename="../../../App/SketchObject.cpp" line="6811"/>
+      <location filename="../../../App/SketchObject.cpp" line="6988"/>
       <source>The Geometry Index (GeoId) provided is not a B-spline.</source>
       <translation>Der bereitgestellte Geometrieindex (GeoId) ist keine B-Spline-Kurve.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6817"/>
+      <location filename="../../../App/SketchObject.cpp" line="6823"/>
       <source>The knot index is out of bounds. Note that in accordance with OCC notation, the first knot has index 1 and not zero.</source>
       <translation>Der Knotenindex ist außerhalb der Grenzen. Beachten, dass der erste Knoten gemäß der OCC-Notation den Index 1 und nicht Null hat.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6833"/>
+      <location filename="../../../App/SketchObject.cpp" line="6839"/>
       <source>The multiplicity cannot be increased beyond the degree of the B-spline.</source>
       <translation>Die Vielfachheit kann nicht über den Grad des B-Splines hinaus erhöht werden.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6844"/>
+      <location filename="../../../App/SketchObject.cpp" line="6850"/>
       <source>The multiplicity cannot be decreased beyond zero.</source>
       <translation>Die Vielfachheit kann nicht über Null hinaus verringert werden.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6860"/>
+      <location filename="../../../App/SketchObject.cpp" line="6866"/>
       <source>OCC is unable to decrease the multiplicity within the maximum tolerance.</source>
       <translation>OCC kann die Multiplizität innerhalb der maximalen Toleranz nicht verringern.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6973"/>
+      <location filename="../../../App/SketchObject.cpp" line="6979"/>
       <source>Knot cannot have zero multiplicity.</source>
       <translation>Ein Knoten kann nicht die Vielfachheit Null haben.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6995"/>
+      <location filename="../../../App/SketchObject.cpp" line="7001"/>
       <source>Knot multiplicity cannot be higher than the degree of the B-spline.</source>
       <translation>Die Vielfachheit kann nicht höher als der Grad des B-Splines sein.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="7005"/>
+      <location filename="../../../App/SketchObject.cpp" line="7011"/>
       <source>Knot cannot be inserted outside the B-spline parameter range.</source>
       <translation>Knoten kann nicht außerhalb des B-Spline-Parameterbereichs eingefügt werden.</translation>
     </message>
@@ -4589,27 +4589,27 @@ Die Rasterweite ändert sich, wenn er kleiner als diese Anzahl von Pixeln wird.<
   <context>
     <name>Notifications</name>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="593"/>
+      <location filename="../../../App/SketchObject.cpp" line="599"/>
       <source>The Sketch has malformed constraints!</source>
       <translation>Die Skizze enthält fehlerhafte Randbedingungen!</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="599"/>
+      <location filename="../../../App/SketchObject.cpp" line="605"/>
       <source>The Sketch has partially redundant constraints!</source>
       <translation>Die Skizze enthält teilweise redundante Randbedingungen!</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="10286"/>
+      <location filename="../../../App/SketchObject.cpp" line="10299"/>
       <source>Unmanaged change of Geometry Property results in invalid constraint indices</source>
       <translation>Unveränderte Änderung der Geometrie-Eigenschaft führt zu ungültigen Constraint-Indizes</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="10317"/>
+      <location filename="../../../App/SketchObject.cpp" line="10330"/>
       <source>Unmanaged change of Constraint Property results in invalid constraint indices</source>
       <translation>Unveränderte Änderung der Constraint-Eigenschaft führt zu ungültigen Constraint-Indizes</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="10940"/>
+      <location filename="../../../App/SketchObject.cpp" line="10953"/>
       <source>Parabolas were migrated. Migrated files won't open in previous versions of FreeCAD!!
 </source>
       <translation>Parabeln wurden intern umstrukturiert. Solche Dateien lassen sich mit früheren Versionen von FreeCAD nicht mehr öffnen!!

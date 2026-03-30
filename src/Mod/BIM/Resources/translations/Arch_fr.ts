@@ -9305,8 +9305,8 @@ CTRL+PgUp to extend extrusionCTRL+PgDown to shrink extrusionCTRL+/ to switch bet
     <message>
       <location filename="../../bimcommands/BimDiff.py" line="69"/>
       <source>The current document must be the main one. The other contains newer objects to merge into it. Ensure that only the objects intended for comparison are visible in both documents. Proceed?</source>
-      <translation>Le document actuel doit être le document principal. L'autre contient des objets plus récents à fusionner dans celui-ci. Vérifier que seuls
-les objets destinés à être comparés sont visibles dans les deux documents. Faut-il continuer ?</translation>
+      <translation>L'actuel document doit être le document principal. L'autre document contient des objets plus récents à fusionner dans celui-ci. Vérifier que
+seuls les objets destinés à être comparés sont visibles dans les deux documents. Faut-il continuer ?</translation>
     </message>
     <message>
       <location filename="../../bimcommands/BimDiff.py" line="321"/>

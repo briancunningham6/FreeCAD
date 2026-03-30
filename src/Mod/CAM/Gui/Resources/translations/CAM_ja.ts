@@ -2517,7 +2517,7 @@ See the file save policy below on how to deal with name conflicts.</translation>
     <message>
       <location filename="../preferences/PathJob.ui" line="275"/>
       <source>It doesn&apos;t seem there are any post processor scripts installed. Please add some into your macro directory and make sure the file name ends with &amp;quot;_post.py&amp;quot;.</source>
-      <translation type="unfinished">It doesn&apos;t seem there are any post processor scripts installed. Please add some into your macro directory and make sure the file name ends with &amp;quot;_post.py&amp;quot;.</translation>
+      <translation>ポストプロセッサー用スクリプトがインストールされていないようです。マクロ・ディレクトリに追加されていること、ファイル名が「_post.py」で終わっていることを確認してください。</translation>
     </message>
     <message>
       <location filename="../preferences/PathJob.ui" line="347"/>
@@ -2856,7 +2856,7 @@ See the file save policy below on how to deal with name conflicts.</translation>
     <message>
       <location filename="../preferences/Advanced.ui" line="117"/>
       <source>If OpenCAMLib is installed with Python bindings, it can be used by some additional 3D operations. NOTE: Enabling OpenCAMLib here requires a restart of FreeCAD to take effect.</source>
-      <translation type="unfinished">If OpenCAMLib is installed with Python bindings, it can be used by some additional 3D operations. NOTE: Enabling OpenCAMLib here requires a restart of FreeCAD to take effect.</translation>
+      <translation>PythonバインディングのOpenCAMLibがインストールされている場合、追加の3D操作で使用できます。 注意: OpenCAMLibを有効にするにはFreeCADの再起動が必要です。</translation>
     </message>
     <message>
       <location filename="../preferences/Advanced.ui" line="127"/>
@@ -4880,8 +4880,8 @@ Larger values (further to the right) will calculate faster; smaller values (furt
       <location filename="../../../Path/Op/Drilling.py" line="242"/>
       <source>Controls tool retract height between holes in same op, Default=G98: safety height
 Use property KeepToolDown to change this</source>
-      <translation type="unfinished">Controls tool retract height between holes in same op, Default=G98: safety height
-Use property KeepToolDown to change this</translation>
+      <translation>同一工程の穴の間のコントロールツール引き上げ高さ。デフォルト=G98: 安全高さ
+変更するにはKeepToolDownプロパティを使用してください。</translation>
     </message>
     <message>
       <location filename="../../../Path/Op/Drilling.py" line="174"/>
@@ -4977,22 +4977,22 @@ Use property KeepToolDown to change this</translation>
       <location filename="../../../Path/Op/Surface.py" line="240"/>
       <location filename="../../../Path/Op/Waterline.py" line="266"/>
       <source>Choose how to process multiple Base Geometry features.</source>
-      <translation type="unfinished">Choose how to process multiple Base Geometry features.</translation>
+      <translation>複数のベースジオメトリーフィーチャーを処理する方法を選択</translation>
     </message>
     <message>
       <location filename="../../../Path/Op/Pocket.py" line="78"/>
       <source>Use adaptive algorithm to eliminate excessive air milling above planar pocket top.</source>
-      <translation type="unfinished">Use adaptive algorithm to eliminate excessive air milling above planar pocket top.</translation>
+      <translation>平面ポケット上部より上の余計な空転フライス加工を取り除くために最適化アルゴリズムを使用</translation>
     </message>
     <message>
       <location filename="../../../Path/Op/Pocket.py" line="88"/>
       <source>Use adaptive algorithm to eliminate excessive air milling below planar pocket bottom.</source>
-      <translation type="unfinished">Use adaptive algorithm to eliminate excessive air milling below planar pocket bottom.</translation>
+      <translation>平面ポケット底部より下の余計な空転フライス加工を取り除くために最適化アルゴリズムを使用</translation>
     </message>
     <message>
       <location filename="../../../Path/Op/Pocket.py" line="98"/>
       <source>Process the model and stock in an operation with no Base Geometry selected.</source>
-      <translation type="unfinished">Process the model and stock in an operation with no Base Geometry selected.</translation>
+      <translation>ベースジオメトリーが選択されていない工程でモデルとストックを処理</translation>
     </message>
     <message>
       <location filename="../../../Path/Op/PocketBase.py" line="140"/>
@@ -5448,8 +5448,8 @@ Use property KeepToolDown to change this</translation>
       <location filename="../../../Path/Op/Vcarve.py" line="343"/>
       <source>Cutoff for removing colinear segments (degrees). 
                         default=10.0.</source>
-      <translation type="unfinished">Cutoff for removing colinear segments (degrees). 
-                        default=10.0.</translation>
+      <translation>同一直線セグメントを除去するためのカットオフ（度）。 
+                        デフォルト=10.0。</translation>
     </message>
     <message>
       <location filename="../../../Path/Op/Vcarve.py" line="349"/>
@@ -6247,13 +6247,13 @@ FinalDepthを手動で設定する必要がある場合は別の操作を選択�
       <location filename="../../../Path/Op/Gui/Base.py" line="1485"/>
       <source>No suitable tool controller found.
 Aborting op creation</source>
-      <translation type="unfinished">No suitable tool controller found.
-Aborting op creation</translation>
+      <translation>適切なツールコントローラーが見つかりませんでした。
+工程作成を中止しています。</translation>
     </message>
     <message>
       <location filename="../../../Path/Op/Gui/Base.py" line="1489"/>
       <source>No tool controller, aborting op creation</source>
-      <translation type="unfinished">No tool controller, aborting op creation</translation>
+      <translation>ツールコントローラーがないため、工程作成を中断しています</translation>
     </message>
   </context>
   <context>
@@ -6261,12 +6261,12 @@ Aborting op creation</translation>
     <message>
       <location filename="../../../Path/Dressup/Array.py" line="298"/>
       <source>No base objects for PathArray.</source>
-      <translation type="unfinished">No base objects for PathArray.</translation>
+      <translation>PathArray用のベースオブジェクトがありません。</translation>
     </message>
     <message>
       <location filename="../../../Path/Dressup/Array.py" line="217"/>
       <source>Base is empty or an invalid object.</source>
-      <translation type="unfinished">Base is empty or an invalid object.</translation>
+      <translation>ベースが空、または無効なオブジェクトです。</translation>
     </message>
     <message>
       <location filename="../../../Path/Op/Gui/Array.py" line="277"/>
@@ -6276,7 +6276,7 @@ Aborting op creation</translation>
     <message>
       <location filename="../../../Path/Op/Gui/Array.py" line="286"/>
       <source>Arrays not compatible with coolant modes.</source>
-      <translation type="unfinished">Arrays not compatible with coolant modes.</translation>
+      <translation>配列は冷却モードと併用できません。</translation>
     </message>
   </context>
   <context>
@@ -8899,7 +8899,7 @@ This will not delete the toolbits contained within it.</source>
     <message>
       <location filename="../../../Path/Dressup/Array.py" line="187"/>
       <source>Removing CoolantMode property from {} as base operation&apos;s CoolantMode is now used.</source>
-      <translation type="unfinished">Removing CoolantMode property from {} as base operation&apos;s CoolantMode is now used.</translation>
+      <translation>{} からCoolantModeプロパティが取り除かれているためベース工程CoolantModeが使用されます。</translation>
     </message>
     <message>
       <location filename="../../../Path/Dressup/Array.py" line="197"/>

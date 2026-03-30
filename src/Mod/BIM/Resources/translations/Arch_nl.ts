@@ -646,7 +646,7 @@ of that project, no matter if they are expanded or not.</translation>
     <message>
       <location filename="../ui/dialogImport.ui" line="68"/>
       <source>Lock document</source>
-      <translation type="unfinished">Lock document</translation>
+      <translation>Vergrendel document</translation>
     </message>
     <message>
       <location filename="../ui/dialogImport.ui" line="75"/>

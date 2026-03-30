@@ -901,7 +901,7 @@
       <location filename="../../AttacherTexts.cpp" line="199"/>
       <source>Align XZ-plane to pass through 3 points; X axis will pass through two first points.</source>
       <comment>Attachment3D mode tooltip</comment>
-      <translation type="unfinished">Align XZ-plane to pass through 3 points; X axis will pass through two first points.</translation>
+      <translation>.</translation>
     </message>
     <message>
       <location filename="../../AttacherTexts.cpp" line="209"/>

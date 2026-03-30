@@ -25,7 +25,7 @@
       <location filename="../../AttacherTexts.cpp" line="845"/>
       <source>Face</source>
       <comment>Attacher reference type</comment>
-      <translation>Felület</translation>
+      <translation>Lap</translation>
     </message>
     <message>
       <location filename="../../AttacherTexts.cpp" line="847"/>

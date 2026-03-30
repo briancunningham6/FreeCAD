@@ -3691,13 +3691,13 @@ s harmoničnom/oscilirajućom pogonskom silom</translation>
     </message>
     <message>
       <location filename="../../ViewProviderFemPostFunction.cpp" line="312"/>
-      <location filename="../../ViewProviderFemPostObject.cpp" line="895"/>
+      <location filename="../../ViewProviderFemPostObject.cpp" line="892"/>
       <source>A dialog is already open in the task panel</source>
       <translation>Dijalog je već otvoren u ploči zadataka</translation>
     </message>
     <message>
       <location filename="../../ViewProviderFemPostFunction.cpp" line="313"/>
-      <location filename="../../ViewProviderFemPostObject.cpp" line="896"/>
+      <location filename="../../ViewProviderFemPostObject.cpp" line="893"/>
       <source>Do you want to close this dialog?</source>
       <translation>Želite li zatvoriti ovaj dijalog?</translation>
     </message>

@@ -8060,7 +8060,7 @@ Si d'autres objets sont sélectionnés, ils seront ignorés.</translation>
     <message>
       <location filename="../../draftguitools/gui_draft2sketch.py" line="60"/>
       <source>Draft to Sketch</source>
-      <translation>Draft vers esquisse</translation>
+      <translation>Convertir un objet de Draft en esquisse de Sketcher et inversement</translation>
     </message>
     <message>
       <location filename="../../draftguitools/gui_draft2sketch.py" line="64"/>

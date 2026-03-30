@@ -3713,12 +3713,12 @@ Si no hi ha cap objecte seleccionat, s'obre un navegador de fitxers per seleccio
     <message>
       <location filename="../../CommandDecorate.cpp" line="103"/>
       <source>No TechDraw Page</source>
-      <translation type="unfinished">No TechDraw Page</translation>
+      <translation>No hi ha cap pàgina TechDraw</translation>
     </message>
     <message>
       <location filename="../../CommandDecorate.cpp" line="104"/>
       <source>Need a TechDraw Page for this command</source>
-      <translation type="unfinished">Need a TechDraw Page for this command</translation>
+      <translation>Es necessita una pàgina TechDraw per a aquesta ordre</translation>
     </message>
     <message>
       <location filename="../../CommandDecorate.cpp" line="173"/>
@@ -5874,7 +5874,7 @@ pot sobreescriure el paràmetre global 'Actualitzar amb 3D'</translation>
     <message>
       <location filename="../../DlgPrefsTechDrawGeneral.ui" line="853"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Control when the view boundary frames and labels are displayed.&lt;/p&gt;&lt;p&gt;Auto: Show on hover, On: Always show, Off: Never show.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-      <translation type="unfinished">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Control when the view boundary frames and labels are displayed.&lt;/p&gt;&lt;p&gt;Auto: Show on hover, On: Always show, Off: Never show.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+      <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Controla quan es mostren els marcs i les etiquetes de límit de la vista.&lt;/p&gt;&lt;p&gt;Automàtic: Mostra-ho en passar per sobre, Activat: Mostrar-ho sempre, Desactivat: No ho mostris mai.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
       <location filename="../../DlgPrefsTechDrawGeneral.ui" line="863"/>
@@ -5894,12 +5894,12 @@ pot sobreescriure el paràmetre global 'Actualitzar amb 3D'</translation>
     <message>
       <location filename="../../DlgPrefsTechDrawGeneral.ui" line="878"/>
       <source>Manual</source>
-      <translation type="unfinished">Manual</translation>
+      <translation>Manual</translation>
     </message>
     <message>
       <location filename="../../DlgPrefsTechDrawGeneral.ui" line="886"/>
       <source>View frames mode</source>
-      <translation type="unfinished">View frames mode</translation>
+      <translation>Mode de visualització de marc</translation>
     </message>
     <message>
       <location filename="../../DlgPrefsTechDrawGeneral.ui" line="910"/>
@@ -6224,7 +6224,7 @@ Fast, but result is a collection of short straight lines.</source>
     <message>
       <location filename="../../MDIViewPage.cpp" line="93"/>
       <source>Toggle &amp;Frames</source>
-      <translation type="unfinished">Toggle &amp;Frames</translation>
+      <translation>Commuta marcs</translation>
     </message>
     <message>
       <location filename="../../MDIViewPage.cpp" line="96"/>
@@ -10231,7 +10231,7 @@ hi ha un diàleg de tasca obert.</translation>
       <location filename="../../CommandDecorate.cpp" line="76"/>
       <location filename="../../CommandDecorate.cpp" line="77"/>
       <source>Turn View Frames On/Off</source>
-      <translation type="unfinished">Turn View Frames On/Off</translation>
+      <translation>Activa o desactiva els marcs de la vista</translation>
     </message>
   </context>
 </TS>

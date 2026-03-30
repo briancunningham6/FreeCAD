@@ -177,7 +177,7 @@
     <message>
       <location filename="../../../JointObject.py" line="1612"/>
       <source>Select 2 elements from 2 separate parts</source>
-      <translation type="unfinished">Select 2 elements from 2 separate parts</translation>
+      <translation>Виберіть 2 елементи з 2 окремих деталей</translation>
     </message>
     <message>
       <location filename="../../../JointObject.py" line="1795"/>
@@ -187,7 +187,7 @@
     <message>
       <location filename="../../../JointObject.py" line="1797"/>
       <source>Thread pitch</source>
-      <translation type="unfinished">Thread pitch</translation>
+      <translation>Крок різьби</translation>
     </message>
     <message>
       <location filename="../../../JointObject.py" line="1799"/>

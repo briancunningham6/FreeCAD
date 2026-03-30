@@ -13789,7 +13789,7 @@ Procedere?</translation>
     <message>
       <location filename="../CommandView.cpp" line="2342"/>
       <source>Toggle A&amp;xis Cross</source>
-      <translation>Attiva/disattiva %sistema degli assi</translation>
+      <translation>Attiva/disattiva sistema degli assi</translation>
     </message>
     <message>
       <location filename="../CommandView.cpp" line="2343"/>

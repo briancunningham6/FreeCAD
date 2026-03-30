@@ -2059,12 +2059,12 @@ Reimpostare i parametri e riprovare.</translation>
     <message>
       <location filename="../../TaskHoleParameters.cpp" line="71"/>
       <source>ISO metric regular</source>
-      <translation>Metrica ISO grossa</translation>
+      <translation>Metrica ISO passo grosso</translation>
     </message>
     <message>
       <location filename="../../TaskHoleParameters.cpp" line="72"/>
       <source>ISO metric fine</source>
-      <translation>Metrica ISO fine</translation>
+      <translation>Metrica ISO passo fine</translation>
     </message>
     <message>
       <location filename="../../TaskHoleParameters.cpp" line="73"/>
@@ -2110,7 +2110,7 @@ Reimpostare i parametri e riprovare.</translation>
       <location filename="../../TaskHoleParameters.cpp" line="678"/>
       <source>Medium</source>
       <comment>Distance between thread crest and hole wall, use ISO-273 nomenclature or equivalent if possible</comment>
-      <translation>Medio</translation>
+      <translation>Media</translation>
     </message>
     <message>
       <location filename="../../TaskHoleParameters.cpp" line="682"/>

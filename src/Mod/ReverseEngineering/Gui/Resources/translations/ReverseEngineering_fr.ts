@@ -142,7 +142,7 @@
     <message>
       <location filename="../../Command.cpp" line="421"/>
       <source>Creates separate mesh segments based on surface types</source>
-      <translation type="unfinished">Creates separate mesh segments based on surface types</translation>
+      <translation>Crée des segments de maillage séparés en fonction des types de surface</translation>
     </message>
   </context>
   <context>
@@ -349,7 +349,7 @@
     <message>
       <location filename="../../FitBSplineSurface.cpp" line="216"/>
       <source>Select a single placement object to get the local orientation.</source>
-      <translation type="unfinished">Select a single placement object to get the local orientation.</translation>
+      <translation>Sélectionner un objet de positionnement pour définir l'orientation locale.</translation>
     </message>
   </context>
   <context>
@@ -367,7 +367,7 @@
     <message>
       <location filename="../../Poisson.ui" line="26"/>
       <source>Octree depth</source>
-      <translation>Profondeur des Octree</translation>
+      <translation>Profondeur de l'Octree</translation>
     </message>
     <message>
       <location filename="../../Poisson.ui" line="46"/>
@@ -397,17 +397,17 @@
     <message>
       <location filename="../../Command.cpp" line="82"/>
       <source>Select a point cloud.</source>
-      <translation type="unfinished">Select a point cloud.</translation>
+      <translation>Sélectionner un nuage de points.</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="121"/>
       <source>Select a point cloud or mesh.</source>
-      <translation type="unfinished">Select a point cloud or mesh.</translation>
+      <translation>Sélectionner un nuage de points ou un maillage.</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="613"/>
       <source>Select a single point cloud.</source>
-      <translation type="unfinished">Select a single point cloud.</translation>
+      <translation>Sélectionner un unique nuage de points.</translation>
     </message>
   </context>
   <context>

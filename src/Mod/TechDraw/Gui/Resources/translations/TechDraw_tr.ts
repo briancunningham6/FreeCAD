@@ -3712,12 +3712,12 @@ Hiç nesne seçilmemişse, bir SVG veya görüntü dosyası seçmek için dosya 
     <message>
       <location filename="../../CommandDecorate.cpp" line="103"/>
       <source>No TechDraw Page</source>
-      <translation type="unfinished">No TechDraw Page</translation>
+      <translation>TechDraw Sayfası Yok</translation>
     </message>
     <message>
       <location filename="../../CommandDecorate.cpp" line="104"/>
       <source>Need a TechDraw Page for this command</source>
-      <translation type="unfinished">Need a TechDraw Page for this command</translation>
+      <translation>Bu komut için bir TechDraw sayfa gerekiyor</translation>
     </message>
     <message>
       <location filename="../../CommandDecorate.cpp" line="173"/>
@@ -5876,7 +5876,7 @@ küresel 'Update with 3D' parametresini geçersiz kılıp kılamayacağını bel
     <message>
       <location filename="../../DlgPrefsTechDrawGeneral.ui" line="853"/>
       <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Control when the view boundary frames and labels are displayed.&lt;/p&gt;&lt;p&gt;Auto: Show on hover, On: Always show, Off: Never show.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-      <translation type="unfinished">&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Control when the view boundary frames and labels are displayed.&lt;/p&gt;&lt;p&gt;Auto: Show on hover, On: Always show, Off: Never show.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
+      <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Görünüm sınır çerçevelerinin ve etiketlerinin ne zaman görüntüleneceğini kontrol edin.&lt;/p&gt;&lt;p&gt;Otomatik: Üzerine gelindiğinde göster, Açık: Her zaman göster, Kapalı: Asla gösterme.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
       <location filename="../../DlgPrefsTechDrawGeneral.ui" line="863"/>
@@ -5896,12 +5896,12 @@ küresel 'Update with 3D' parametresini geçersiz kılıp kılamayacağını bel
     <message>
       <location filename="../../DlgPrefsTechDrawGeneral.ui" line="878"/>
       <source>Manual</source>
-      <translation type="unfinished">Manual</translation>
+      <translation>Manuel</translation>
     </message>
     <message>
       <location filename="../../DlgPrefsTechDrawGeneral.ui" line="886"/>
       <source>View frames mode</source>
-      <translation type="unfinished">View frames mode</translation>
+      <translation>Çerçeveleri görüntüle modu</translation>
     </message>
     <message>
       <location filename="../../DlgPrefsTechDrawGeneral.ui" line="910"/>
@@ -6227,7 +6227,7 @@ Hızlıdır ama sonucu, kısa düz çizgilerin derlemesidir.</translation>
     <message>
       <location filename="../../MDIViewPage.cpp" line="93"/>
       <source>Toggle &amp;Frames</source>
-      <translation type="unfinished">Toggle &amp;Frames</translation>
+      <translation>Çerçeveyi aç/kapat</translation>
     </message>
     <message>
       <location filename="../../MDIViewPage.cpp" line="96"/>
@@ -10235,7 +10235,7 @@ bu ölçüyü şu anda silemezsiniz.</translation>
       <location filename="../../CommandDecorate.cpp" line="76"/>
       <location filename="../../CommandDecorate.cpp" line="77"/>
       <source>Turn View Frames On/Off</source>
-      <translation type="unfinished">Turn View Frames On/Off</translation>
+      <translation>Görünüm Çerçevelerini Aç / Kapat</translation>
     </message>
   </context>
 </TS>

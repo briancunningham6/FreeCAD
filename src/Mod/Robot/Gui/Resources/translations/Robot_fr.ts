@@ -191,7 +191,7 @@
     <message>
       <location filename="../../CommandTrajectory.cpp" line="289"/>
       <source>Set Default Values</source>
-      <translation>Définir les valeurs par défaut</translation>
+      <translation>Définir les Valeurs par défaut</translation>
     </message>
     <message>
       <location filename="../../CommandTrajectory.cpp" line="290"/>

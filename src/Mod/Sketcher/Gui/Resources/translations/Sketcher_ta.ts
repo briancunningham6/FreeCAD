@@ -958,54 +958,54 @@ invalid constraints, and degenerate geometry</source>
   <context>
     <name>Exceptions</name>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6796"/>
+      <location filename="../../../App/SketchObject.cpp" line="6802"/>
       <source>You are requesting no change in knot multiplicity.</source>
       <translation>முடிச்சுப் பெருக்கத்தில் எந்த மாற்றத்தையும் நீங்கள் கோரவில்லை.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6788"/>
-      <location filename="../../../App/SketchObject.cpp" line="6966"/>
+      <location filename="../../../App/SketchObject.cpp" line="6794"/>
+      <location filename="../../../App/SketchObject.cpp" line="6972"/>
       <source>B-spline Geometry Index (GeoID) is out of bounds.</source>
       <translation>B-spline Geometry குறியெண் (GeoID) எல்லைக்கு வெளியே உள்ளது.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6805"/>
-      <location filename="../../../App/SketchObject.cpp" line="6982"/>
+      <location filename="../../../App/SketchObject.cpp" line="6811"/>
+      <location filename="../../../App/SketchObject.cpp" line="6988"/>
       <source>The Geometry Index (GeoId) provided is not a B-spline.</source>
       <translation>வழங்கப்பட்ட சியோமெட்ரி இன்டெக்ச் (சியோஐடி) பி-ச்ப்லைன் அல்ல.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6817"/>
+      <location filename="../../../App/SketchObject.cpp" line="6823"/>
       <source>The knot index is out of bounds. Note that in accordance with OCC notation, the first knot has index 1 and not zero.</source>
       <translation>முடிச்சு குறியீட்டு எல்லைக்கு வெளியே உள்ளது. OCC குறியீட்டின்படி, முதல் முடிச்சு குறியீட்டு 1 ஐக் கொண்டுள்ளது மற்றும் பூச்சியமாக இல்லை.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6833"/>
+      <location filename="../../../App/SketchObject.cpp" line="6839"/>
       <source>The multiplicity cannot be increased beyond the degree of the B-spline.</source>
       <translation>பி-ச்ப்லைனின் அளவைத் தாண்டி பெருக்கத்தை அதிகரிக்க முடியாது.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6844"/>
+      <location filename="../../../App/SketchObject.cpp" line="6850"/>
       <source>The multiplicity cannot be decreased beyond zero.</source>
       <translation>பூச்சியத்திற்கு மேல் பெருக்கத்தை குறைக்க முடியாது.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6860"/>
+      <location filename="../../../App/SketchObject.cpp" line="6866"/>
       <source>OCC is unable to decrease the multiplicity within the maximum tolerance.</source>
       <translation>OCC ஆல் அதிகபட்ச சகிப்புத்தன்மைக்குள் பெருக்கத்தைக் குறைக்க முடியவில்லை.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6973"/>
+      <location filename="../../../App/SketchObject.cpp" line="6979"/>
       <source>Knot cannot have zero multiplicity.</source>
       <translation>முடிச்சு சுழிய பெருக்கத்தைக் கொண்டிருக்க முடியாது.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="6995"/>
+      <location filename="../../../App/SketchObject.cpp" line="7001"/>
       <source>Knot multiplicity cannot be higher than the degree of the B-spline.</source>
       <translation>முடிச்சுப் பெருக்கம் பி-ச்ப்லைனின் அளவை விட அதிகமாக இருக்க முடியாது.</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="7005"/>
+      <location filename="../../../App/SketchObject.cpp" line="7011"/>
       <source>Knot cannot be inserted outside the B-spline parameter range.</source>
       <translation>B-spline அளவுரு வரம்பிற்கு வெளியே முடிச்சைச் செருக முடியாது.</translation>
     </message>
@@ -4588,27 +4588,27 @@ The grid spacing changes if it becomes smaller than the specified pixel size.</s
   <context>
     <name>Notifications</name>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="593"/>
+      <location filename="../../../App/SketchObject.cpp" line="599"/>
       <source>The Sketch has malformed constraints!</source>
       <translation>ச்கெட்ச் தவறான கட்டுப்பாடுகளைக் கொண்டுள்ளது!</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="599"/>
+      <location filename="../../../App/SketchObject.cpp" line="605"/>
       <source>The Sketch has partially redundant constraints!</source>
       <translation>ச்கெட்ச் ஓரளவு தேவையற்ற கட்டுப்பாடுகளைக் கொண்டுள்ளது!</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="10286"/>
+      <location filename="../../../App/SketchObject.cpp" line="10299"/>
       <source>Unmanaged change of Geometry Property results in invalid constraint indices</source>
       <translation>சியோமெட்ரி சொத்தின் நிர்வகிக்கப்படாத மாற்றம் தவறான கட்டுப்பாடு குறியீடுகளில் விளைகிறது</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="10317"/>
+      <location filename="../../../App/SketchObject.cpp" line="10330"/>
       <source>Unmanaged change of Constraint Property results in invalid constraint indices</source>
       <translation>கட்டுப்படுத்தப்படாத சொத்துக்களின் நிர்வகிக்கப்படாத மாற்றம் தவறான கட்டுப்பாட்டு குறியீடுகளில் விளைகிறது</translation>
     </message>
     <message>
-      <location filename="../../../App/SketchObject.cpp" line="10940"/>
+      <location filename="../../../App/SketchObject.cpp" line="10953"/>
       <source>Parabolas were migrated. Migrated files won't open in previous versions of FreeCAD!!
 </source>
       <translation>பரபோலாக்கள் இடம்பெயர்ந்தனர். FreeCAD இன் முந்தைய பதிப்புகளில் இடம்பெயர்ந்த கோப்புகள் திறக்கப்படாது!!

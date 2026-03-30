@@ -90,7 +90,7 @@
     <message>
       <location filename="../../StartView.cpp" line="206"/>
       <source>Empty File</source>
-      <translation type="unfinished">Empty File</translation>
+      <translation>Порожній файл</translation>
     </message>
     <message>
       <location filename="../../StartView.cpp" line="207"/>
@@ -255,7 +255,7 @@ Multiple folders can be added using ";;" to separate paths.</translation>
     <message>
       <location filename="../../DlgStartPreferences.ui" line="133"/>
       <source>Close start page after loading</source>
-      <translation type="unfinished">Close start page after loading</translation>
+      <translation>Закрити стартову сторінку після завантаження</translation>
     </message>
   </context>
   <context>

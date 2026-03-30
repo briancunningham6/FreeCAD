@@ -396,7 +396,7 @@ The property of this object will refer to the property of the Variable Set.</tra
     <message>
       <location filename="../Application.h" line="306"/>
       <source>Cu&amp;tting</source>
-      <translation type="unfinished">Cu&amp;tting</translation>
+      <translation>Cor&amp;te</translation>
     </message>
     <message>
       <location filename="../Application.h" line="315"/>
@@ -9188,7 +9188,7 @@ the current copy will be lost.
     <message>
       <location filename="../CommandDoc.cpp" line="1176"/>
       <source>Cu&amp;t</source>
-      <translation type="unfinished">Cu&amp;t</translation>
+      <translation>Recor&amp;tar</translation>
     </message>
     <message>
       <location filename="../CommandDoc.cpp" line="1177"/>
@@ -12899,7 +12899,7 @@ da região forem não opacos.</translation>
     <message>
       <location filename="../CommandDoc.cpp" line="769"/>
       <source>Save &amp;As…</source>
-      <translation type="unfinished">Save &amp;As…</translation>
+      <translation>S&amp;alvar como…</translation>
     </message>
     <message>
       <location filename="../CommandDoc.cpp" line="770"/>
@@ -12912,7 +12912,7 @@ da região forem não opacos.</translation>
     <message>
       <location filename="../CommandDoc.cpp" line="798"/>
       <source>Save Cop&amp;y</source>
-      <translation type="unfinished">Save Cop&amp;y</translation>
+      <translation>Salvar Cóp&amp;ia</translation>
     </message>
     <message>
       <location filename="../CommandDoc.cpp" line="800"/>

@@ -323,7 +323,7 @@ sections transversales). Si le corps contient déjà des éléments, le lissage 
     <message>
       <location filename="../../Command.cpp" line="1960"/>
       <source>Fillet</source>
-      <translation>Congé</translation>
+      <translation>Créer un congé</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="1961"/>
@@ -4377,7 +4377,7 @@ over 90: larger hole radius at the bottom</source>
     <message>
       <location filename="../../../WizardShaft/WizardShaftTable.py" line="180"/>
       <source>Fillet</source>
-      <translation>Congé</translation>
+      <translation>Créer un congé</translation>
     </message>
   </context>
   <context>
@@ -4827,7 +4827,7 @@ L'intersection d'entités d'esquisse ou de plusieurs faces dans une esquisse n'e
       <location filename="../../../App/FeaturePipe.cpp" line="444"/>
       <location filename="../../../App/FeatureLoft.cpp" line="301"/>
       <source>Loft: Failed to create shell</source>
-      <translation>Lissage : impossible de créer une coque.</translation>
+      <translation>Lissage : impossible de créer la coque</translation>
     </message>
     <message>
       <location filename="../../../App/FeatureExtrude.cpp" line="817"/>

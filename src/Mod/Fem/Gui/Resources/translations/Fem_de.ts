@@ -3686,13 +3686,13 @@ harmonischem/oszillierendem Antriebsstrom verwendet</translation>
     </message>
     <message>
       <location filename="../../ViewProviderFemPostFunction.cpp" line="312"/>
-      <location filename="../../ViewProviderFemPostObject.cpp" line="895"/>
+      <location filename="../../ViewProviderFemPostObject.cpp" line="892"/>
       <source>A dialog is already open in the task panel</source>
       <translation>Im Aufgaben-Fenster ist bereits ein Dialog geöffnet</translation>
     </message>
     <message>
       <location filename="../../ViewProviderFemPostFunction.cpp" line="313"/>
-      <location filename="../../ViewProviderFemPostObject.cpp" line="896"/>
+      <location filename="../../ViewProviderFemPostObject.cpp" line="893"/>
       <source>Do you want to close this dialog?</source>
       <translation>Soll dieser Dialog geschlossen werden?</translation>
     </message>

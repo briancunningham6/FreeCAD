@@ -9210,7 +9210,7 @@ the current copy will be lost.
     <message>
       <location filename="../CommandMacro.cpp" line="50"/>
       <source>Record &amp;Macro</source>
-      <translation type="unfinished">Record &amp;Macro</translation>
+      <translation>Запис макросу</translation>
     </message>
     <message>
       <location filename="../CommandMacro.cpp" line="52"/>
@@ -10010,7 +10010,7 @@ the current copy will be lost.
     <message>
       <location filename="../CommandView.cpp" line="2672"/>
       <source>Zoom &amp;In</source>
-      <translation type="unfinished">Zoom &amp;In</translation>
+      <translation>Збільшити</translation>
     </message>
     <message>
       <location filename="../CommandView.cpp" line="2673"/>
@@ -10023,7 +10023,7 @@ the current copy will be lost.
     <message>
       <location filename="../CommandView.cpp" line="2701"/>
       <source>Zoom &amp;Out</source>
-      <translation type="unfinished">Zoom &amp;Out</translation>
+      <translation>Зменшити</translation>
     </message>
     <message>
       <location filename="../CommandView.cpp" line="2702"/>

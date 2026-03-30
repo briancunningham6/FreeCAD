@@ -811,7 +811,7 @@ entraîner une perte de données !</translation>
     <message>
       <location filename="../Clipping.ui" line="155"/>
       <source>Custom Clipping Direction</source>
-      <translation>Personnaliser la direction du rognage</translation>
+      <translation>Personnaliser la direction de la coupe</translation>
     </message>
     <message>
       <location filename="../Clipping.ui" line="190"/>
@@ -3329,7 +3329,7 @@ en plus de la barre de couleur</translation>
     <message>
       <location filename="../PreferencePages/DlgSettingsDocument.ui" line="132"/>
       <source>Using undo/redo in documents</source>
-      <translation>Utilisation des fonctions Annuler/Rétablir dans les documents</translation>
+      <translation>Utiliser les fonctions Annuler/Rétablir dans les documents</translation>
     </message>
     <message>
       <location filename="../PreferencePages/DlgSettingsDocument.ui" line="165"/>
@@ -9368,7 +9368,7 @@ manière récursive ?</translation>
     <message>
       <location filename="../CommandDoc.cpp" line="568"/>
       <source>&amp;Merge Document</source>
-      <translation>&amp;Fusionner le document</translation>
+      <translation>&amp;Fusionner un document</translation>
     </message>
     <message>
       <location filename="../CommandDoc.cpp" line="570"/>
@@ -9379,7 +9379,7 @@ manière récursive ?</translation>
       <location filename="../CommandDoc.cpp" line="584"/>
       <location filename="../CommandDoc.cpp" line="596"/>
       <source>Merge document</source>
-      <translation>Fusionner le document</translation>
+      <translation>Fusionner un document</translation>
     </message>
     <message>
       <location filename="../CommandDoc.cpp" line="586"/>
@@ -9389,7 +9389,7 @@ manière récursive ?</translation>
     <message>
       <location filename="../CommandDoc.cpp" line="597"/>
       <source>Cannot merge document with itself.</source>
-      <translation>Impossible de fusionner le document avec lui-même.</translation>
+      <translation>Il n'est pas possible de fusionner un document avec lui-même.</translation>
     </message>
   </context>
   <context>
@@ -9930,7 +9930,7 @@ manière récursive ?</translation>
     <message>
       <location filename="../CommandView.cpp" line="3695"/>
       <source>&amp;4 Preselection</source>
-      <translation>&amp;4 Présélection</translation>
+      <translation>&amp;4 Présélectionner</translation>
     </message>
     <message>
       <location filename="../CommandView.cpp" line="3696"/>
@@ -10206,7 +10206,7 @@ activée ou désactivée.</translation>
     <message>
       <location filename="../Workbench.cpp" line="592"/>
       <source>Standard &amp;Views</source>
-      <translation>&amp;Vues standard</translation>
+      <translation>&amp;Vues standards</translation>
     </message>
     <message>
       <location filename="../Workbench.cpp" line="593"/>
@@ -11278,7 +11278,7 @@ affichera cet écran de démarrage.</translation>
     <message>
       <location filename="../PreferencePages/DlgSettingsGeneral.ui" line="344"/>
       <source>Activate overlay handling of docked panels</source>
-      <translation>Activer la gestion des superpositions des panneaux ancrés</translation>
+      <translation>Activer la gestion de la superposition des panneaux ancrés</translation>
     </message>
     <message>
       <location filename="../PreferencePages/DlgSettingsGeneral.ui" line="347"/>
@@ -11979,7 +11979,7 @@ Mettre à zéro pour remplir l'espace.</translation>
     <message>
       <location filename="../PreferencePages/DlgSettingsUI.ui" line="104"/>
       <source>Overlay style sheet</source>
-      <translation>Feuille de style superposée</translation>
+      <translation>Feuille de style de superposition</translation>
     </message>
     <message>
       <location filename="../PreferencePages/DlgSettingsUI.ui" line="197"/>
@@ -12105,7 +12105,7 @@ activée ou désactivée.</translation>
     <message>
       <location filename="../PreferencePages/DlgSettingsUI.ui" line="474"/>
       <source>Automatically pass through of the mouse cursor</source>
-      <translation>Passage automatique du curseur de la souris</translation>
+      <translation>Passer automatiquement les clics de la souris à travers</translation>
     </message>
     <message>
       <location filename="../PreferencePages/DlgSettingsUI.ui" line="490"/>
@@ -12115,7 +12115,7 @@ activée ou désactivée.</translation>
     <message>
       <location filename="../PreferencePages/DlgSettingsUI.ui" line="493"/>
       <source>Automatically pass through of the mouse wheel</source>
-      <translation>Passage automatique de la molette de la souris</translation>
+      <translation>Passer automatiquement les actions de la molette de la souris à travers</translation>
     </message>
     <message>
       <location filename="../PreferencePages/DlgSettingsUI.ui" line="512"/>
@@ -13060,7 +13060,7 @@ Proceed?</source>
     <message>
       <location filename="../CommandFeat.cpp" line="77"/>
       <source>Random &amp;Color</source>
-      <translation>Couleur &amp;aléatoire</translation>
+      <translation>Appliquer une couleur &amp;aléatoire</translation>
     </message>
     <message>
       <location filename="../CommandFeat.cpp" line="78"/>
@@ -13714,7 +13714,7 @@ d'un simple dossier permettant d'organiser les objets dans un modèle.</translat
     <message>
       <location filename="../CommandView.cpp" line="1711"/>
       <source>Standard &amp;Views</source>
-      <translation>&amp;Vues standard</translation>
+      <translation>&amp;Vues standards</translation>
     </message>
     <message>
       <location filename="../CommandView.cpp" line="1712"/>
@@ -14117,7 +14117,7 @@ d'un simple dossier permettant d'organiser les objets dans un modèle.</translat
     <message>
       <location filename="../CommandView.cpp" line="3859"/>
       <source>Toggle Overl&amp;ay for All Panels</source>
-      <translation>Activer/désactiver la &amp;superposition pour tous les panneaux</translation>
+      <translation>Activer/désactiver la &amp;superposition de tous les panneaux</translation>
     </message>
     <message>
       <location filename="../CommandView.cpp" line="3860"/>
@@ -14130,7 +14130,7 @@ d'un simple dossier permettant d'organiser les objets dans un modèle.</translat
     <message>
       <location filename="../CommandView.cpp" line="3882"/>
       <source>Toggle Tra&amp;nsparent Panels</source>
-      <translation>Activer/désactiver la &amp;transparence pour tout</translation>
+      <translation>Activer/désactiver la &amp;transparence de tous les panneaux</translation>
     </message>
     <message>
       <location filename="../CommandView.cpp" line="3883"/>
@@ -14237,7 +14237,7 @@ This makes the docked panel stay transparent at all times.</source>
     <message>
       <location filename="../CommandView.cpp" line="4103"/>
       <source>Overlay Docked Panel</source>
-      <translation>Activer/désactiver la superposition d'un panneau ancré</translation>
+      <translation>Superposition des panneaux ancrables</translation>
     </message>
     <message>
       <location filename="../CommandView.cpp" line="4104"/>

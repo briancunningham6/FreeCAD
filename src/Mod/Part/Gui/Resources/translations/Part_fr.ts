@@ -1638,7 +1638,7 @@ des plans vertical et horizontal avec un sommet ou le long d'une ligne.</transla
     <message>
       <location filename="../../Command.cpp" line="1593"/>
       <source>Fillet</source>
-      <translation>Congé</translation>
+      <translation>Créer un congé</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="1594"/>

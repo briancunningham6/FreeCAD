@@ -12544,7 +12544,7 @@ regionen inte är ogenomskinliga.</translation>
       <location filename="../InputHintWidget.cpp" line="248"/>
       <source>Backtab</source>
       <extracomment>Keyboard key for Backtab</extracomment>
-      <translation type="unfinished">Backtab</translation>
+      <translation>Bakflik</translation>
     </message>
     <message>
       <location filename="../InputHintWidget.cpp" line="252"/>
@@ -12820,7 +12820,7 @@ regionen inte är ogenomskinliga.</translation>
     <message>
       <location filename="../TaskView/TaskSolverMessages.ui" line="26"/>
       <source>DOF</source>
-      <translation type="unfinished">DOF</translation>
+      <translation>DOF</translation>
     </message>
     <message>
       <location filename="../TaskView/TaskSolverMessages.ui" line="33"/>
@@ -13837,7 +13837,7 @@ Fortsätta?</translation>
     <message>
       <location filename="../CommandView.cpp" line="2506"/>
       <source>Stereo Re&amp;d/Cyan</source>
-      <translation type="unfinished">Stereo Re&amp;d/Cyan</translation>
+      <translation>Stereo Röd/Cyan</translation>
     </message>
     <message>
       <location filename="../CommandView.cpp" line="2507"/>

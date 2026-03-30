@@ -177,7 +177,7 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="1462"/>
       <source>Additive Pipe</source>
-      <translation type="unfinished">Additive Pipe</translation>
+      <translation>添加管件</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="1463"/>
@@ -195,7 +195,7 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../CommandBody.cpp" line="91"/>
       <source>New Body</source>
-      <translation type="unfinished">New Body</translation>
+      <translation>新的實體</translation>
     </message>
     <message>
       <location filename="../../CommandBody.cpp" line="92"/>
@@ -375,12 +375,12 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="220"/>
       <source>Datum Line</source>
-      <translation type="unfinished">Datum Line</translation>
+      <translation>基準線</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="221"/>
       <source>Creates a new datum line</source>
-      <translation type="unfinished">Creates a new datum line</translation>
+      <translation>建立新基準線</translation>
     </message>
   </context>
   <context>
@@ -519,7 +519,7 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="574"/>
       <source>New Sketch</source>
-      <translation type="unfinished">New Sketch</translation>
+      <translation>建立新的草圖</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="575"/>
@@ -663,7 +663,7 @@ so that self intersection is avoided.</source>
     <message>
       <location filename="../../Command.cpp" line="314"/>
       <source>Shape Binder</source>
-      <translation type="unfinished">Shape Binder</translation>
+      <translation>形狀粘合劑</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="315"/>
@@ -923,7 +923,7 @@ so that self intersection is avoided.</source>
       <location filename="../../SketchWorkflow.cpp" line="516"/>
       <location filename="../../SketchWorkflow.cpp" line="772"/>
       <source>New Sketch</source>
-      <translation type="unfinished">New Sketch</translation>
+      <translation>建立新的草圖</translation>
     </message>
     <message>
       <location filename="../../Command.cpp" line="2597"/>

@@ -955,7 +955,7 @@ while doing a left or right click and move the mouse up or down</source>
     <message>
       <location filename="../Dialogs/DlgAddProperty.cpp" line="602"/>
       <source>Add</source>
-      <translation>Hozzáad</translation>
+      <translation>Hozzáadás</translation>
     </message>
     <message>
       <location filename="../Dialogs/DlgAddProperty.cpp" line="664"/>
@@ -1152,7 +1152,7 @@ while doing a left or right click and move the mouse up or down</source>
     <message>
       <location filename="../Dialogs/DlgActions.ui" line="234"/>
       <source>Add</source>
-      <translation>Hozzáad</translation>
+      <translation>Hozzáadás</translation>
     </message>
     <message>
       <location filename="../Dialogs/DlgActions.ui" line="241"/>

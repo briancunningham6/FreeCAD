@@ -7920,7 +7920,7 @@ Això no suprimirà les broques que conté.</translation>
     <message>
       <location filename="../../../Path/Post/scripts/opensbp_post.py" line="107"/>
       <source>see property below</source>
-      <translation type="unfinished">see property below</translation>
+      <translation>vegeu la propietat a continuació</translation>
     </message>
   </context>
   <context>
