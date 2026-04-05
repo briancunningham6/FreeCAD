@@ -4,16 +4,17 @@ cadclaude_worker.py — Persistent FreeCAD worker for ElixiCad.
 Protocol (over stdin/stdout, all messages newline-terminated):
   Startup:     worker emits  "READY\\n"
   Per request:
-    Elixir -> worker:  "<length>\\n<script bytes>"
-    worker -> Elixir:  "RESULT_START\\n<stdout lines>\\nRESULT_END\\n"
-                    or "ERROR_START\\n<traceback>\\nERROR_END\\n"
-  Shutdown:    Elixir -> worker: "EXIT\\n"
+    Elixir → worker:  "<length>\\n<script bytes>"
+    worker → Elixir:  "RESULT_START\\n<stdout lines>\\nRESULT_END\\n"
+                   or "ERROR_START\\n<traceback>\\nERROR_END\\n"
+  Shutdown:    Elixir → worker: "EXIT\\n"
                worker exits cleanly
 
-IMPORTANT: The Elixir Worker port must NOT use :stderr_to_stdout.
-If it does, fd 1 and fd 2 are already the same pipe and the
-_setup_protocol_channel() redirect below is a no-op, allowing
-FreeCAD's C-level Console.PrintMessage() output to corrupt the stream.
+FreeCAD/OCCT writes its own diagnostic messages to stdout (fd 1) via
+C-level PrintMessage. To prevent these from corrupting the protocol
+stream, we redirect fd 1 → fd 2 at the OS level before entering the
+loop, then use fd 2 (a fresh duplicate of the original stdout) as the
+protocol pipe.
 """
 
 import sys
@@ -22,31 +23,31 @@ import traceback
 import io
 
 
-def _setup_protocol_channel():
+def _redirect_freecad_noise():
     """
-    Redirect OS-level fd 1 (C printf / FreeCAD.Console.PrintMessage) to
-    stderr so FreeCAD/OCCT internals cannot corrupt the protocol stream.
-    Returns a dedicated file object that writes to the original stdout pipe.
-
-    After this call:
-      - C-level printf/PrintMessage  -> fd 1 -> fd 2 (stderr, discarded)
-      - Python print() in scripts    -> captured via StringIO in _run_script
-      - Protocol traffic             -> protocol_out -> saved fd -> Elixir pipe
+    Redirect C-level fd 1 to fd 2 so FreeCAD/OCCT PrintMessage output
+    goes to stderr and cannot corrupt the protocol stream on stdout.
+    Returns a new file object wrapping the original fd 1.
     """
-    sys.stdout.flush()
+    # Duplicate original stdout fd before redirecting
+    original_stdout_fd = os.dup(1)
+    # Point fd 1 at stderr so C-level writes go there
+    os.dup2(2, 1)
+    # Python stdout now needs to write to the original fd
+    protocol_out = os.fdopen(original_stdout_fd, "w", buffering=1)
+    return protocol_out
 
-    # Duplicate the real Elixir stdout pipe before we redirect it
-    protocol_fd = os.dup(sys.stdout.fileno())
-    os.set_inheritable(protocol_fd, False)
 
-    # Point fd 1 -> fd 2 so C-level output goes to stderr instead
-    os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
-
-    return os.fdopen(protocol_fd, "w", buffering=1)
+def _readline():
+    """Read a line from stdin using the binary buffer to avoid read-ahead corruption.
+    Python's text-layer sys.stdin.readline() pre-buffers bytes, which causes
+    sys.stdin.buffer.read(n) to miss those bytes. Always use the binary layer.
+    """
+    return sys.stdin.buffer.readline().decode("utf-8")
 
 
 def _read_exactly(n):
-    """Read exactly n bytes from stdin, blocking until available."""
+    """Read exactly n bytes from stdin using the binary buffer, blocking until available."""
     buf = b""
     while len(buf) < n:
         chunk = sys.stdin.buffer.read(n - len(buf))
@@ -56,23 +57,12 @@ def _read_exactly(n):
     return buf
 
 
-def _cleanup_documents():
-    """Close any FreeCAD documents left open by the previous script."""
-    try:
-        import FreeCAD
-        for name in list(FreeCAD.listDocuments().keys()):
-            try:
-                FreeCAD.closeDocument(name)
-            except Exception:
-                pass
-    except Exception:
-        pass
-
-
 def _run_script(script_source):
     """
-    Execute script_source in a fresh namespace, capturing all Python-level
-    stdout/stderr output. Returns (output, error) where error is None on success.
+    Execute script_source, capturing stdout/stderr.
+    Returns (output, error) where error is None on success.
+    Also closes any FreeCAD documents left open by the script (cleanup
+    after crashes that skip FreeCAD.closeDocument).
     """
     old_stdout = sys.stdout
     old_stderr = sys.stderr
@@ -84,7 +74,7 @@ def _run_script(script_source):
         exec(compile(script_source, "<cadclaude>", "exec"), {})
         error = None
     except SystemExit:
-        # Scripts end with sys.exit(0) as their normal exit — treat as clean
+        # Scripts call sys.exit(0) — treat as clean completion
         error = None
     except Exception:
         error = traceback.format_exc()
@@ -92,23 +82,46 @@ def _run_script(script_source):
         sys.stdout = old_stdout
         sys.stderr = old_stderr
 
-    _cleanup_documents()
+    # Close any documents left open (e.g. after a crash mid-script)
+    try:
+        import FreeCAD
+        for name in list(FreeCAD.listDocuments().keys()):
+            try:
+                FreeCAD.closeDocument(name)
+            except Exception:
+                pass
+    except Exception:
+        pass
 
     return captured.getvalue(), error
 
 
-def main():
-    # Redirect C-level stdout before emitting READY so no FreeCAD/OCCT startup
-    # noise can reach the Elixir protocol pipe after this point.
-    protocol_out = _setup_protocol_channel()
+def _write(protocol_out, *lines):
+    """Write lines to protocol_out, returning False if the pipe is broken."""
+    try:
+        for line in lines:
+            protocol_out.write(line)
+        protocol_out.flush()
+        return True
+    except (BrokenPipeError, OSError):
+        return False
 
-    protocol_out.write("READY\n")
-    protocol_out.flush()
+
+def main():
+    protocol_out = _redirect_freecad_noise()
+
+    # Signal readiness to the Elixir pool manager
+    if not _write(protocol_out, "READY\n"):
+        return
 
     while True:
-        header = sys.stdin.readline()
+        try:
+            header = _readline()
+        except (EOFError, OSError):
+            break
+
         if not header:
-            break  # stdin closed — parent process died
+            break  # stdin closed — parent died
 
         header = header.strip()
 
@@ -118,35 +131,28 @@ def main():
         try:
             length = int(header)
         except ValueError:
-            protocol_out.write("ERROR_START\n")
-            protocol_out.write(f"Bad header: {header!r}\n")
-            protocol_out.write("ERROR_END\n")
-            protocol_out.flush()
+            if not _write(protocol_out, "ERROR_START\n", f"Bad header: {header!r}\n", "ERROR_END\n"):
+                break
             continue
 
         try:
             script_bytes = _read_exactly(length)
             script = script_bytes.decode("utf-8")
+        except (EOFError, OSError):
+            break
         except Exception as e:
-            protocol_out.write("ERROR_START\n")
-            protocol_out.write(f"Failed to read script: {e}\n")
-            protocol_out.write("ERROR_END\n")
-            protocol_out.flush()
+            if not _write(protocol_out, "ERROR_START\n", f"Failed to read script: {e}\n", "ERROR_END\n"):
+                break
             continue
 
         output, error = _run_script(script)
 
         if error:
-            protocol_out.write("ERROR_START\n")
-            protocol_out.write(output)
-            protocol_out.write(error)
-            protocol_out.write("ERROR_END\n")
+            if not _write(protocol_out, "ERROR_START\n", output, error, "ERROR_END\n"):
+                break
         else:
-            protocol_out.write("RESULT_START\n")
-            protocol_out.write(output)
-            protocol_out.write("RESULT_END\n")
-
-        protocol_out.flush()
+            if not _write(protocol_out, "RESULT_START\n", output, "RESULT_END\n"):
+                break
 
 
 if __name__ == "__main__":
