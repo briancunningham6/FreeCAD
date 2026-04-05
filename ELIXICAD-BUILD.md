@@ -100,11 +100,20 @@ cmake -S . -B build \
   -DBUILD_REVERSEENGINEERING=OFF \
   -DBUILD_OPENSCAD=OFF \
   -DBUILD_SPREADSHEET=OFF \
+  -DBUILD_IMPORT=OFF \
+  -DBUILD_MATERIAL=ON \
   -DOCC_INCLUDE_DIR=/Users/user/dev/OCCT/install/include/opencascade \
   -DOCC_LIBRARY_DIR=/Users/user/dev/OCCT/install/lib \
   -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/icu4c@78;/opt/homebrew/opt/pybind11;/opt/homebrew/opt/xerces-c;/opt/homebrew/opt/boost;/opt/homebrew/opt/eigen"
 ```
 
+> `BUILD_IMPORT=OFF` — the Import module has OCCT RC compatibility issues and is
+> not needed by cadClaude (STEP export uses `shape.exportStep()` directly from Part).
+>
+> `BUILD_MATERIAL=ON` — must be kept ON; it is a hard dependency of `BUILD_PART`.
+> Always pass it explicitly: if it ever ends up OFF in the CMake cache and you
+> reconfigure without specifying it, the configure step will abort.
+>
 > To use the standard Homebrew OCCT instead, omit the `OCC_*` flags and add
 > `-DCMAKE_PREFIX_PATH=/opt/homebrew` (or the conda prefix if using pixi).
 
