@@ -24,6 +24,7 @@
 
 #include <Mod/Part/PartGlobal.h>
 
+#include <TColGeom_SequenceOfCurve.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Face.hxx>

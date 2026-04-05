@@ -30,6 +30,8 @@
 
 #include <BRepAlgoAPI_BooleanOperation.hxx>
 #include <Message_ProgressRange.hxx>
+#include <TopoDS_Shape.hxx>
+#include <TopTools_ListOfShape.hxx>
 
 class FCBRepAlgoAPIHelper
 {

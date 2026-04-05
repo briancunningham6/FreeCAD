@@ -62,9 +62,10 @@
 #include <TopoDS_Shape.hxx>
 #include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
-#include <TopTools_DataMapIteratorOfDataMapOfIntegerListOfShape.hxx>
-#include <TopTools_DataMapIteratorOfDataMapOfShapeShape.hxx>
-#include <TopTools_ListIteratorOfListOfShape.hxx>
+#include <TopTools_DataMapOfIntegerListOfShape.hxx>
+#include <TopTools_DataMapOfIntegerShape.hxx>
+#include <TopTools_DataMapOfShapeShape.hxx>
+#include <TopTools_IndexedMapOfShape.hxx>
 #include <TopTools_ListOfShape.hxx>
 
 #include <Base/Console.h>
@@ -234,11 +235,9 @@ void FaceAdjacencySplitter::recursiveFind(const TopoDS_Face& face, FaceVectorTyp
     outVector.push_back(face);
 
     const TopTools_ListOfShape& edges = faceToEdgeMap.FindFromKey(face);
-    TopTools_ListIteratorOfListOfShape edgeIt;
-    for (edgeIt.Initialize(edges); edgeIt.More(); edgeIt.Next()) {
+    for (TopTools_ListOfShape::Iterator edgeIt(edges); edgeIt.More(); edgeIt.Next()) {
         const TopTools_ListOfShape& faces = edgeToFaceMap.FindFromKey(edgeIt.Value());
-        TopTools_ListIteratorOfListOfShape faceIt;
-        for (faceIt.Initialize(faces); faceIt.More(); faceIt.Next()) {
+        for (TopTools_ListOfShape::Iterator faceIt(faces); faceIt.More(); faceIt.Next()) {
             if (!facesInMap.Contains(faceIt.Value())) {
                 continue;
             }
@@ -1226,8 +1225,8 @@ bool FaceUniter::process()
 #endif
         TopTools_DataMapOfShapeShape affectedFaces;
         edgeFuse.Faces(affectedFaces);
-        TopTools_DataMapIteratorOfDataMapOfShapeShape mapIt;
-        for (mapIt.Initialize(affectedFaces); mapIt.More(); mapIt.Next()) {
+        TopTools_DataMapOfShapeShape::Iterator mapIt(affectedFaces);
+        for (; mapIt.More(); mapIt.Next()) {
             ShapeFix_Face faceFixer(TopoDS::Face(mapIt.Value()));
             faceFixer.Perform();
         }
@@ -1271,12 +1270,11 @@ bool FaceUniter::process()
         TopTools_DataMapOfIntegerShape newEdges;
         edgeFuse.Edges(oldEdges);
         edgeFuse.ResultEdges(newEdges);
-        TopTools_DataMapIteratorOfDataMapOfIntegerListOfShape edgeMapIt;
-        for (edgeMapIt.Initialize(oldEdges); edgeMapIt.More(); edgeMapIt.Next()) {
+        TopTools_DataMapOfIntegerListOfShape::Iterator edgeMapIt(oldEdges);
+        for (; edgeMapIt.More(); edgeMapIt.Next()) {
             const TopTools_ListOfShape& edges = edgeMapIt.Value();
             int idx = edgeMapIt.Key();
-            TopTools_ListIteratorOfListOfShape edgeIt;
-            for (edgeIt.Initialize(edges); edgeIt.More(); edgeIt.Next()) {
+            for (TopTools_ListOfShape::Iterator edgeIt(edges); edgeIt.More(); edgeIt.Next()) {
                 if (newEdges.IsBound(idx)) {
                     modifiedShapes.emplace_back(edgeIt.Value(), newEdges(idx));
                 }
@@ -1311,7 +1309,7 @@ void Part::BRepBuilderAPI_RefineModel::Build()
 #endif
 {
     if (myShape.IsNull()) {
-        Standard_Failure::Raise("Cannot remove splitter from empty shape");
+        throw Standard_Failure("Cannot remove splitter from empty shape");
     }
 
     if (myShape.ShapeType() == TopAbs_SOLID) {
@@ -1332,7 +1330,7 @@ void Part::BRepBuilderAPI_RefineModel::Build()
                 }
             }
             else {
-                Standard_Failure::Raise("Removing splitter failed");
+                throw Standard_Failure("Removing splitter failed");
             }
         }
         myShape = mkSolid.Solid();
@@ -1346,7 +1344,7 @@ void Part::BRepBuilderAPI_RefineModel::Build()
             LogModifications(uniter);
         }
         else {
-            Standard_Failure::Raise("Removing splitter failed");
+            throw Standard_Failure("Removing splitter failed");
         }
     }
     else if (myShape.ShapeType() == TopAbs_COMPOUND) {
@@ -1441,8 +1439,7 @@ const TopTools_ListOfShape& Part::BRepBuilderAPI_RefineModel::Modified(const Top
 
 Standard_Boolean Part::BRepBuilderAPI_RefineModel::IsDeleted(const TopoDS_Shape& S)
 {
-    TopTools_ListIteratorOfListOfShape it;
-    for (it.Initialize(myDeleted); it.More(); it.Next()) {
+    for (TopTools_ListOfShape::Iterator it(myDeleted); it.More(); it.Next()) {
         if (it.Value().IsSame(S)) {
             return Standard_True;
         }

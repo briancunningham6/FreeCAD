@@ -56,10 +56,13 @@
 #include <Standard_Mutex.hxx>
 #include <Standard_TypeMismatch.hxx>
 #include <Standard_Version.hxx>
-#include <TColStd_ListIteratorOfListOfTransient.hxx>
 #include <TColStd_ListOfTransient.hxx>
 #include <TColgp_SequenceOfXY.hxx>
 #include <TColgp_SequenceOfXYZ.hxx>
+#include <TColgp_Array1OfPnt.hxx>
+#include <TColStd_Array1OfInteger.hxx>
+
+
 #include <TopoDS.hxx>
 #if OCC_VERSION_HEX < 0x070600
 # include <Adaptor3d_HCurveOnSurface.hxx>
@@ -157,14 +160,14 @@ Handle(Geom_Surface) Part::Tools::makeSurface(
     Handle(Geom_Surface) aRes;
     GeomPlate_BuildPlateSurface aPlateBuilder(aDeg, aNbPnts, aNbIter, aTol2d, aTol3d, anAngTol, aCurvTol);
 
-    TColStd_ListIteratorOfListOfTransient anIt(theBoundaries);
+    TColStd_ListOfTransient::Iterator anIt(theBoundaries);
     if (anIt.More()) {
         int i = 1;
         for (; anIt.More(); anIt.Next(), i++) {
             const Handle(Standard_Transient) & aCur = anIt.Value();
             if (aCur.IsNull()) {
                 assert(0);
-                Standard_ConstructionError::Raise("Tools::makeSurface()");
+                throw Standard_ConstructionError("Tools::makeSurface()");
             }
 #if OCC_VERSION_HEX >= 0x070600
             else if (aCur->IsKind(STANDARD_TYPE(Adaptor3d_CurveOnSurface))) {
@@ -219,12 +222,12 @@ Handle(Geom_Surface) Part::Tools::makeSurface(
                 aPlateBuilder.Add(aConst);
             }
             else {
-                Standard_TypeMismatch::Raise("Tools::makeSurface()");
+                throw Standard_TypeMismatch("Tools::makeSurface()");
             }
         }
     }
     else {
-        Standard_ConstructionError::Raise("Tools::makeSurface()");
+        throw Standard_ConstructionError("Tools::makeSurface()");
     }
 
     // construct

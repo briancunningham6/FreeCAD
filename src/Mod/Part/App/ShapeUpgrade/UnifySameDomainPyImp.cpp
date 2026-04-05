@@ -183,7 +183,7 @@ PyObject* UnifySameDomainPy::keepShapes(PyObject* args)
     }
 
     try {
-        TopTools_MapOfShape theShapes;
+        NCollection_Map<TopoDS_Shape, TopTools_ShapeMapHasher> theShapes;
         Py::Sequence list(obj);
         for (Py::Sequence::iterator it = list.begin(); it != list.end(); ++it) {
             Py::TopoShape shp(*it);

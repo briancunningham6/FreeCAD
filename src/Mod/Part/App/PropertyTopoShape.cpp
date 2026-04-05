@@ -32,7 +32,10 @@
 #include <OSD_OpenFile.hxx>
 #include <Standard_Failure.hxx>
 #include <Standard_Version.hxx>
+#include <TopExp.hxx>
 #include <TopoDS.hxx>
+#include <TopTools_IndexedMapOfShape.hxx>
+#include <TopTools_ListOfShape.hxx>
 
 #include <App/Application.h>
 #include <App/Document.h>

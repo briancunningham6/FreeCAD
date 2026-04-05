@@ -46,6 +46,7 @@
 #include <Poly_Triangulation.hxx>
 #include <Poly_PolygonOnTriangulation.hxx>
 #include <TColStd_Array1OfReal.hxx>
+#include <TColStd_HArray1OfReal.hxx>
 #include <TopExp.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Edge.hxx>

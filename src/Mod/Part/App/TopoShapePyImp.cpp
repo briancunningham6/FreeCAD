@@ -34,6 +34,7 @@
 #include <BRepBuilderAPI_Transform.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
+#include <BRepExtrema_MapOfIntegerPackedMapOfInteger.hxx>
 #include <BRepExtrema_ShapeProximity.hxx>
 #include <BRepExtrema_SupportType.hxx>
 #include <BRepFilletAPI_MakeChamfer.hxx>
@@ -62,8 +63,9 @@
 #include <TopLoc_Location.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Iterator.hxx>
+#include <TopTools_HSequenceOfShape.hxx>
+#include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
-#include <TopTools_ListIteratorOfListOfShape.hxx>
 #include <TopTools_ListOfShape.hxx>
 
 #include <App/PropertyStandard.h>
@@ -942,8 +944,7 @@ PyObject* TopoShapePy::ancestorsOfType(PyObject* args) const
 
         Py::List list;
         std::set<Standard_Integer> hashes;
-        TopTools_ListIteratorOfListOfShape it(ancestors);
-        for (; it.More(); it.Next()) {
+        for (TopTools_ListOfShape::Iterator it(ancestors); it.More(); it.Next()) {
             // make sure to avoid duplicates
             Standard_Integer code = ShapeMapHasher {}(it.Value());
             if (hashes.find(code) == hashes.end()) {
@@ -1544,7 +1545,7 @@ PyObject* TopoShapePy::isClosed(PyObject* args) const
 
     try {
         if (getTopoShapePtr()->getShape().IsNull()) {
-            Standard_Failure::Raise("Cannot determine the 'Closed'' flag of an empty shape");
+            throw Standard_Failure("Cannot determine the 'Closed'' flag of an empty shape");
         }
         return Py_BuildValue("O", (getTopoShapePtr()->isClosed() ? Py_True : Py_False));
     }

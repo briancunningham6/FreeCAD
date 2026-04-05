@@ -4870,7 +4870,7 @@ public:
 
     void populate(ShapeMapper& mapper)
     {
-        for (TopTools_DataMapIteratorOfDataMapOfShapeListOfShape it(this->myModified); it.More();
+        for (TopTools_DataMapOfShapeListOfShape::Iterator it(this->myModified); it.More();
              it.Next()) {
             if (it.Key().IsNull()) {
                 continue;
@@ -4997,9 +4997,21 @@ TopoShape& TopoShape::makeElementBSplineFace(
         auto e4 = mk4.Edge();
 
         ShapeMapper mapper;
-        mapper.populate(MappingStatus::Modified, e, {e1, e2, e3, e4});
-        mapper.populate(MappingStatus::Generated, v, {TopExp::FirstVertex(e1)});
-        mapper.populate(MappingStatus::Generated, v, {TopExp::LastVertex(e4)});
+        mapper.populate(
+            MappingStatus::Modified,
+            TopoShape(e),
+            std::vector<TopoShape> {TopoShape(e1), TopoShape(e2), TopoShape(e3), TopoShape(e4)}
+        );
+        mapper.populate(
+            MappingStatus::Generated,
+            TopoShape(v),
+            std::vector<TopoShape> {TopoShape(TopExp::FirstVertex(e1))}
+        );
+        mapper.populate(
+            MappingStatus::Generated,
+            TopoShape(v),
+            std::vector<TopoShape> {TopoShape(TopExp::LastVertex(e4))}
+        );
 
         BRep_Builder builder;
         TopoDS_Compound comp;
@@ -5104,7 +5116,7 @@ TopoShape& TopoShape::makeElementBSplineFace(
                     Handle(Geom_BSplineCurve)
                         spline = scc.ConvertToBSpline(c_geom, u1, u2, Precision::Confusion());
                     if (spline.IsNull()) {
-                        Standard_Failure::Raise(
+                        throw Standard_Failure(
                             "A curve was not a B-spline and could not be converted into one."
                         );
                     }

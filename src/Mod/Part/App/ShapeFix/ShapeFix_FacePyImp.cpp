@@ -24,7 +24,9 @@
 
 #include <Mod/Part/PartGlobal.h>
 
+#include <NCollection_Sequence.hxx>
 #include <TopoDS.hxx>
+#include <TopTools_ListOfShape.hxx>
 
 
 #include "ShapeFix/ShapeFix_FacePy.h"
@@ -207,11 +209,11 @@ PyObject* ShapeFix_FacePy::fixLoopWire(PyObject* args)
         return nullptr;
     }
 
-    TopTools_SequenceOfShape aResWires;
+    NCollection_Sequence<TopoDS_Shape> aResWires;
     Standard_Boolean ok = getShapeFix_FacePtr()->FixLoopWire(aResWires);
     Py::List list;
-    for (int index = aResWires.Lower(); index <= aResWires.Upper(); index++) {
-        TopoShape sh = aResWires(index);
+    for (NCollection_Sequence<TopoDS_Shape>::Iterator it(aResWires); it.More(); it.Next()) {
+        TopoShape sh = it.Value();
         list.append(Py::asObject(sh.getPyObject()));
     }
     return Py::new_reference_to(Py::TupleN(Py::Boolean(ok), list));

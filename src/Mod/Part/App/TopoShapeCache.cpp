@@ -83,7 +83,7 @@ TopoShape TopoShapeCache::Ancestry::_getTopoShape(const TopoShape& parent, int i
         res._parentCache = parent._parentCache;
     }
     else {
-        res._parentCache = owner->shared_from_this();
+        res._parentCache = parent._cache;
     }
     return res;
 }

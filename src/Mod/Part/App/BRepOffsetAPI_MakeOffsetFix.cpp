@@ -37,7 +37,6 @@
 #include <TopoDS_Compound.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Wire.hxx>
-#include <TopTools_ListIteratorOfListOfShape.hxx>
 #include <TopTools_ListOfShape.hxx>
 #include <TopTools_MapOfShape.hxx>
 
@@ -153,7 +152,7 @@ void BRepOffsetAPI_MakeOffsetFix::MakeWire(TopoDS_Shape& wire)
             }
             xpv.Next();
         }
-        for (TopTools_ListIteratorOfListOfShape it(newShapes); it.More(); it.Next()) {
+        for (TopTools_ListOfShape::Iterator it(newShapes); it.More(); it.Next()) {
             TopoDS_Shape newShape = it.Value();
 
             if (aMap.Contains(newShape)) {

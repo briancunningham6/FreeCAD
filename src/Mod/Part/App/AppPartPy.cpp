@@ -67,7 +67,7 @@
 #include <TopoDS_Face.hxx>
 #include <TopoDS_Shell.hxx>
 #include <TopoDS_Solid.hxx>
-#include <TopTools_ListIteratorOfListOfShape.hxx>
+#include <TopTools_ListOfShape.hxx>
 
 #include <BRepFill_Generator.hxx>
 
@@ -1627,7 +1627,7 @@ private:
             }
 
             if (!mkPoly.IsDone()) {
-                Standard_Failure::Raise(
+                throw Standard_Failure(
                     "Cannot create polygon because less than two vertices are given"
                 );
             }
@@ -2311,13 +2311,13 @@ private:
             Py::List list1;
             Py::List list2;
             MapperMaker mapper(splitShape);
-            for (TopTools_ListIteratorOfListOfShape it(d); it.More(); it.Next()) {
+            for (TopTools_ListOfShape::Iterator it(d); it.More(); it.Next()) {
                 TopoShape s(0, sources.front().Hasher);
                 list1.append(shape2pyshape(
                     s.makeShapeWithElementMap(it.Value(), mapper, sources, Part::OpCodes::Split)
                 ));
             }
-            for (TopTools_ListIteratorOfListOfShape it(l); it.More(); it.Next()) {
+            for (TopTools_ListOfShape::Iterator it(l); it.More(); it.Next()) {
                 TopoShape s(0, sources.front().Hasher);
                 list2.append(shape2pyshape(
                     s.makeShapeWithElementMap(it.Value(), mapper, sources, Part::OpCodes::Split)

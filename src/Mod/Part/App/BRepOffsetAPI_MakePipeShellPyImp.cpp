@@ -30,7 +30,7 @@
 #include <gp_Pnt.hxx>
 #include <Standard_Version.hxx>
 #include <TopoDS.hxx>
-#include <TopTools_ListIteratorOfListOfShape.hxx>
+#include <TopTools_ListOfShape.hxx>
 
 
 #include <Base/GeometryPyCXX.h>
@@ -411,8 +411,7 @@ PyObject* BRepOffsetAPI_MakePipeShellPy::generated(PyObject* args)
         const TopTools_ListOfShape& list = this->getBRepOffsetAPI_MakePipeShellPtr()->Generated(s);
 
         Py::List shapes;
-        TopTools_ListIteratorOfListOfShape it;
-        for (it.Initialize(list); it.More(); it.Next()) {
+        for (TopTools_ListOfShape::Iterator it(list); it.More(); it.Next()) {
             const TopoDS_Shape& s = it.Value();
             shapes.append(Py::asObject(new TopoShapePy(new TopoShape(s))));
         }
@@ -524,8 +523,7 @@ PyObject* BRepOffsetAPI_MakePipeShellPy::simulate(PyObject* args)
         this->getBRepOffsetAPI_MakePipeShellPtr()->Simulate(nbsec, list);
 
         Py::List shapes;
-        TopTools_ListIteratorOfListOfShape it;
-        for (it.Initialize(list); it.More(); it.Next()) {
+        for (TopTools_ListOfShape::Iterator it(list); it.More(); it.Next()) {
             const TopoDS_Shape& s = it.Value();
             shapes.append(Py::asObject(new TopoShapePy(new TopoShape(s))));
         }
