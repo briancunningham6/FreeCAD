@@ -1,3 +1,6 @@
+# CadClaude — pure-Python mod, no BUILD_ guard needed
+add_subdirectory(CadClaude)
+
 if(BUILD_ADDONMGR)
   if( NOT EXISTS "${CMAKE_SOURCE_DIR}/src/Mod/AddonManager/CMakeLists.txt" )
     message(FATAL_ERROR "The Addon Manager has been moved into a git submodule. Please run

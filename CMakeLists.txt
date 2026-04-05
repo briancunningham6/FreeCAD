@@ -153,6 +153,9 @@ SetGlobalCompilerAndLinkerSettings()
 add_subdirectory(src)
 add_subdirectory(data)
 
+install(PROGRAMS scripts/freecad-worker
+        DESTINATION bin)
+
 BuildAndInstallDesignerPlugin()
 
 CreatePackagingTargets()

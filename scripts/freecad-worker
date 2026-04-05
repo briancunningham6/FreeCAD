@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# scripts/freecad-worker — installed to bin/freecad-worker
+# Launch FreeCAD in persistent worker mode for ElixiCad.
+#
+# Environment variables:
+#   FREECAD_PATH       Path to the FreeCAD binary (default: auto-detected)
+#   FREECAD_WORKER_PY  Path to cadclaude_worker.py (default: derived from this
+#                      script's location as ../Mod/CadClaude/cadclaude_worker.py)
+set -euo pipefail
+
+# ── Resolve FreeCAD binary ────────────────────────────────────────────────────
+FREECAD_BIN="${FREECAD_PATH:-}"
+
+if [ -z "$FREECAD_BIN" ]; then
+    if [ -x "/Applications/FreeCAD.app/Contents/MacOS/FreeCAD" ]; then
+        FREECAD_BIN="/Applications/FreeCAD.app/Contents/MacOS/FreeCAD"
+    elif command -v freecadcmd &>/dev/null; then
+        FREECAD_BIN="$(command -v freecadcmd)"
+    elif command -v FreeCADCmd &>/dev/null; then
+        FREECAD_BIN="$(command -v FreeCADCmd)"
+    else
+        echo "freecad-worker: FreeCAD binary not found." \
+             "Install FreeCAD or set FREECAD_PATH." >&2
+        exit 1
+    fi
+fi
+
+# ── Resolve worker script ─────────────────────────────────────────────────────
+WORKER_PY="${FREECAD_WORKER_PY:-}"
+
+if [ -z "$WORKER_PY" ]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    # Installed layout:  bin/freecad-worker  → ../Mod/CadClaude/
+    # Dev/source layout: scripts/freecad-worker → ../src/Mod/CadClaude/
+    if [ -f "$SCRIPT_DIR/../Mod/CadClaude/cadclaude_worker.py" ]; then
+        WORKER_PY="$SCRIPT_DIR/../Mod/CadClaude/cadclaude_worker.py"
+    else
+        WORKER_PY="$SCRIPT_DIR/../src/Mod/CadClaude/cadclaude_worker.py"
+    fi
+fi
+
+if [ ! -f "$WORKER_PY" ]; then
+    echo "freecad-worker: cadclaude_worker.py not found at $WORKER_PY" >&2
+    echo "freecad-worker: Set FREECAD_WORKER_PY to override." >&2
+    exit 1
+fi
+
+# ── Launch ────────────────────────────────────────────────────────────────────
+# -c puts FreeCAD in console mode (RunMode=Cmd, no GUI).
+# The inline Python string is not a valid filesystem path so FreeCAD falls
+# through to runString() (Application.cpp:processCmdLineFiles), executing it
+# directly in the __main__ context.
+# runpy.run_path ensures __name__ == '__main__' so the guard at the bottom of
+# cadclaude_worker.py fires and main() is called.
+exec "$FREECAD_BIN" -c \
+    "import runpy; runpy.run_path('${WORKER_PY}', run_name='__main__')"
