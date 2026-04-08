@@ -12,7 +12,15 @@ set -euo pipefail
 FREECAD_BIN="${FREECAD_PATH:-}"
 
 if [ -z "$FREECAD_BIN" ]; then
-    if [ -x "/Applications/FreeCAD.app/Contents/MacOS/FreeCAD" ]; then
+    _SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [ -x "$_SELF_DIR/../MacOS/FreeCADCmd" ]; then
+        # Installed layout: cmake puts FreeCADCmd in MacOS/ (app bundle convention)
+        FREECAD_BIN="$_SELF_DIR/../MacOS/FreeCADCmd"
+    elif [ -x "$_SELF_DIR/../MacOS/FreeCAD" ]; then
+        FREECAD_BIN="$_SELF_DIR/../MacOS/FreeCAD"
+    elif [ -x "/Applications/FreeCAD.app/Contents/MacOS/FreeCADCmd" ]; then
+        FREECAD_BIN="/Applications/FreeCAD.app/Contents/MacOS/FreeCADCmd"
+    elif [ -x "/Applications/FreeCAD.app/Contents/MacOS/FreeCAD" ]; then
         FREECAD_BIN="/Applications/FreeCAD.app/Contents/MacOS/FreeCAD"
     elif command -v freecadcmd &>/dev/null; then
         FREECAD_BIN="$(command -v freecadcmd)"

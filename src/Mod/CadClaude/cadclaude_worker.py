@@ -21,10 +21,6 @@ import sys
 import os
 import traceback
 import io
-import time
-import resource
-import json
-import platform
 
 
 def _redirect_freecad_noise():
@@ -149,32 +145,13 @@ def main():
                 break
             continue
 
-        t_start = time.monotonic()
-        ru_before = resource.getrusage(resource.RUSAGE_SELF)
-
         output, error = _run_script(script)
 
-        t_end = time.monotonic()
-        ru_after = resource.getrusage(resource.RUSAGE_SELF)
-
-        # ru_maxrss: bytes on macOS, kilobytes on Linux
-        rss_bytes = ru_after.ru_maxrss
-        if platform.system() != "Darwin":
-            rss_bytes *= 1024
-
-        metrics = json.dumps({
-            "wall_ms": round((t_end - t_start) * 1000, 1),
-            "cpu_user_ms": round((ru_after.ru_utime - ru_before.ru_utime) * 1000, 1),
-            "cpu_sys_ms": round((ru_after.ru_stime - ru_before.ru_stime) * 1000, 1),
-            "process_rss_mb": round(rss_bytes / (1024 * 1024), 2),
-        })
-        metrics_line = f"CADCLAUDE_METRICS: {metrics}\n"
-
         if error:
-            if not _write(protocol_out, "ERROR_START\n", output, error, metrics_line, "ERROR_END\n"):
+            if not _write(protocol_out, "ERROR_START\n", output, error, "ERROR_END\n"):
                 break
         else:
-            if not _write(protocol_out, "RESULT_START\n", output, metrics_line, "RESULT_END\n"):
+            if not _write(protocol_out, "RESULT_START\n", output, "RESULT_END\n"):
                 break
 
 
