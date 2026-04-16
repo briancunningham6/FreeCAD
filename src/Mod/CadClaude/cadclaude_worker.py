@@ -21,6 +21,9 @@ import sys
 import os
 import traceback
 import io
+import time
+import resource
+import json
 
 
 def _redirect_freecad_noise():
@@ -70,6 +73,9 @@ def _run_script(script_source):
     sys.stdout = captured
     sys.stderr = captured
 
+    t_start = time.monotonic()
+    ru_before = resource.getrusage(resource.RUSAGE_SELF)
+
     try:
         exec(compile(script_source, "<cadclaude>", "exec"), {})
         error = None
@@ -82,6 +88,26 @@ def _run_script(script_source):
         sys.stdout = old_stdout
         sys.stderr = old_stderr
 
+    t_end = time.monotonic()
+    ru_after = resource.getrusage(resource.RUSAGE_SELF)
+
+    wall_ms = round((t_end - t_start) * 1000)
+    cpu_user_ms = round((ru_after.ru_utime - ru_before.ru_utime) * 1000)
+    cpu_sys_ms = round((ru_after.ru_stime - ru_before.ru_stime) * 1000)
+    # ru_maxrss is in bytes on macOS, kilobytes on Linux
+    rss_bytes = ru_after.ru_maxrss
+    if sys.platform == "darwin":
+        process_rss_mb = round(rss_bytes / (1024 * 1024), 2)
+    else:
+        process_rss_mb = round(rss_bytes / 1024, 2)
+
+    metrics = {
+        "wall_ms": wall_ms,
+        "cpu_user_ms": cpu_user_ms,
+        "cpu_sys_ms": cpu_sys_ms,
+        "process_rss_mb": process_rss_mb,
+    }
+
     # Close any documents left open (e.g. after a crash mid-script)
     try:
         import FreeCAD
@@ -93,7 +119,9 @@ def _run_script(script_source):
     except Exception:
         pass
 
-    return captured.getvalue(), error
+    output = captured.getvalue()
+    output += f"\nCADCLAUDE_METRICS: {json.dumps(metrics)}"
+    return output, error
 
 
 def _write(protocol_out, *lines):
