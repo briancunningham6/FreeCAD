@@ -14,7 +14,9 @@ FROM ubuntu:24.04
 ARG DEBIAN_FRONTEND=noninteractive
 
 # Apply CVE patches from the base image, then install headless build deps.
-# No Qt, Coin3D, or GUI workbenches — headless/CLI only.
+# Qt6 headers are required by FreeCAD's cmake even for headless builds
+# (App framework uses Qt signals/slots throughout).
+# No Coin3D, GUI workbenches, or full Qt GUI stack.
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
@@ -22,6 +24,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     git \
     python3-dev \
     python3-pybind11 \
+    qt6-base-dev \
     libboost-dev \
     libboost-date-time-dev \
     libboost-filesystem-dev \
