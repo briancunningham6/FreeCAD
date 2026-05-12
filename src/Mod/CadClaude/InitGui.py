@@ -34,41 +34,47 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
     MenuText = "CadClaude"
     ToolTip = "AI-assisted CAD modeling using Claude and CadQuery"
 
+    PENDING_OPEN_FILE = os.path.expanduser("~/.cadclaude/pending_open_project")
+
     def __init__(self):
         self.chat_panel = None
         self.project_browser = None
         self._workbench_dir = None
         self._current_project = None
+        self._open_timer = None
 
     def _get_workbench_dir(self):
         """Find the workbench directory path"""
         if self._workbench_dir is not None:
             return self._workbench_dir
 
-        # Search FreeCAD's mod paths
+        # Search FreeCAD's mod paths — symlink now points directly to freecad/
         search_paths = [
             os.path.join(FreeCAD.getUserAppDataDir(), "Mod", "CadClaude"),
             os.path.join(FreeCAD.getResourceDir(), "Mod", "CadClaude"),
             os.path.expanduser("~/Library/Application Support/FreeCAD/Mod/CadClaude"),
-            "/Users/user/dev/cadClaude",
+            "/Users/user/dev/cadClaude/freecad",
         ]
 
         for path in search_paths:
             if os.path.exists(path):
                 self._workbench_dir = path
-                # Add to sys.path for imports
+                # Adding the workbench dir to sys.path gives access to:
+                #   core/, ui/, shared/ (symlink → ../shared)
+                # Do NOT add the repo root — that would shadow FreeCAD's own
+                # `freecad` namespace package and break internal FreeCAD imports.
                 if path not in sys.path:
                     sys.path.insert(0, path)
                 return path
 
         # Fallback
-        self._workbench_dir = "/Users/user/dev/cadClaude"
+        self._workbench_dir = "/Users/user/dev/cadClaude/freecad"
         return self._workbench_dir
 
     @property
     def Icon(self):
-        # Icons live under freecad/resources/icons/ relative to the repo root
-        return os.path.join(self._get_workbench_dir(), "freecad", "resources", "icons", "cadclaude.svg")
+        # Icons live under resources/icons/ relative to the freecad/ workbench dir
+        return os.path.join(self._get_workbench_dir(), "resources", "icons", "cadclaude.svg")
 
     def Initialize(self):
         """Called when the workbench is first activated"""
@@ -83,13 +89,18 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
         """Called when switching to this workbench"""
         FreeCAD.Console.PrintMessage("CadClaude workbench activated\n")
         self._setup_panels()
-        self._restore_last_project()
+        self._start_open_timer()
+        # Check immediately — handles the "Open in FreeCAD" launch case.
+        # If no pending file, fall back to restoring the last project.
+        if not self._check_pending_open():
+            self._restore_last_project()
 
     def Deactivated(self):
         """Called when switching away from this workbench"""
         FreeCAD.Console.PrintMessage("CadClaude workbench deactivated\n")
         self._save_last_project()
         self._hide_panels()
+        self._stop_open_timer()
 
     def _restore_last_project(self):
         """Restore the last opened project on workbench activation"""
@@ -117,6 +128,72 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
                 FreeCAD.Console.PrintMessage(f"Opened project: {project.name}\n")
         except Exception as e:
             FreeCAD.Console.PrintWarning(f"Could not restore last project: {e}\n")
+
+    def _start_open_timer(self):
+        """Poll ~/.cadclaude/pending_open_project every 2 s for remote open requests."""
+        if self._open_timer is not None:
+            return
+        try:
+            from PySide6.QtCore import QTimer
+        except ImportError:
+            try:
+                from PySide2.QtCore import QTimer
+            except ImportError:
+                return  # No Qt available — skip
+
+        self._open_timer = QTimer()
+        self._open_timer.setInterval(2000)
+        self._open_timer.timeout.connect(self._check_pending_open)
+        self._open_timer.start()
+
+    def _stop_open_timer(self):
+        if self._open_timer is not None:
+            self._open_timer.stop()
+            self._open_timer = None
+
+    def _check_pending_open(self):
+        """Load project from pending open file written by elixicad server.
+        Returns True if a pending open was found and handled, False otherwise."""
+        pending = self.PENDING_OPEN_FILE
+        if not os.path.exists(pending):
+            return False
+        try:
+            with open(pending, "r") as f:
+                project_path = f.read().strip()
+            os.remove(pending)
+        except Exception as e:
+            FreeCAD.Console.PrintWarning(f"CadClaude: could not read pending open file: {e}\n")
+            return False
+
+        if not project_path:
+            return False
+
+        try:
+            from core.Project import Project
+        except ImportError:
+            try:
+                from shared.Project import Project
+            except ImportError:
+                FreeCAD.Console.PrintWarning("CadClaude: Project module not available\n")
+                return False
+
+        if not Project.is_project(project_path):
+            FreeCAD.Console.PrintWarning(f"CadClaude: pending open path is not a project: {project_path}\n")
+            return False
+
+        FreeCAD.Console.PrintMessage(f"CadClaude: opening project from elixicad: {project_path}\n")
+        try:
+            project = Project.load(project_path)
+            self._current_project = project
+            if self.project_browser:
+                self.project_browser.set_project(project)
+            if self.chat_panel:
+                self.chat_panel.set_current_project(project)
+            FreeCAD.Console.PrintMessage(f"CadClaude: opened project '{project.name}'\n")
+            return True
+        except Exception as e:
+            FreeCAD.Console.PrintWarning(f"CadClaude: failed to open project {project_path}: {e}\n")
+            return False
 
     def _save_last_project(self):
         """Save the current project path for restoration on next launch"""
@@ -714,7 +791,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
 
         if is_freecad_code and not is_cadquery_code:
             # Use FreeCADExecutor for FreeCAD-native code (runs inside FreeCAD)
-            from freecad.core.FreeCADExecutor import FreeCADExecutor
+            from core.FreeCADExecutor import FreeCADExecutor
             executor = FreeCADExecutor()
             result = executor.execute_code(code, body.path, body.name)
             
@@ -732,7 +809,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
                 FreeCAD.Console.PrintError(f"Body {body.name} failed: {result.error}\n")
         else:
             # Use ScriptRunner for CadQuery code (runs in subprocess with separate Python)
-            from freecad.core.CodeExecutor import ScriptRunner
+            from core.CodeExecutor import ScriptRunner
             runner = ScriptRunner(self._current_project)
             result = runner.run_body(body)
 
@@ -755,7 +832,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
             FreeCAD.Console.PrintError(f"Script not found: {script_path}\n")
             return
 
-        from freecad.core.FreeCADExecutor import FreeCADExecutor
+        from core.FreeCADExecutor import FreeCADExecutor
         executor = FreeCADExecutor()
 
         # Determine output directory (same as script location)
@@ -786,7 +863,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
         """Handle request to view a file in FreeCAD viewport"""
         FreeCAD.Console.PrintMessage(f"Viewing file: {file_path}\n")
 
-        from freecad.core.ViewportManager import get_viewport_manager
+        from core.ViewportManager import get_viewport_manager
         viewport = get_viewport_manager()
         viewport.import_file(file_path)
 
@@ -985,3 +1062,37 @@ FreeCADGui.addCommand('CadClaude_Reload', CadClaudeReloadCommand())
 
 # Register the workbench
 FreeCADGui.addWorkbench(CadClaudeWorkbench())
+
+
+def _check_pending_open_at_startup():
+    """
+    Called once after FreeCAD finishes GUI initialisation.
+    If ~/.cadclaude/pending_open_project exists, switch to the CadClaude
+    workbench — its Activated() handler will then pick up the pending file
+    via the polling timer and load the project.
+    """
+    pending = os.path.expanduser("~/.cadclaude/pending_open_project")
+    if not os.path.exists(pending):
+        return
+
+    FreeCAD.Console.PrintMessage("CadClaude: pending open detected — activating workbench\n")
+    try:
+        FreeCADGui.activateWorkbench("CadClaudeWorkbench")
+    except Exception as e:
+        FreeCAD.Console.PrintWarning(f"CadClaude: could not activate workbench at startup: {e}\n")
+
+
+try:
+    from PySide6.QtCore import QTimer as _QTimer
+except ImportError:
+    try:
+        from PySide2.QtCore import QTimer as _QTimer
+    except ImportError:
+        _QTimer = None
+
+if _QTimer is not None:
+    _startup_timer = _QTimer()
+    _startup_timer.setSingleShot(True)
+    _startup_timer.timeout.connect(_check_pending_open_at_startup)
+    # 1 s delay — enough for FreeCAD's GUI to finish initialising
+    _startup_timer.start(1000)
