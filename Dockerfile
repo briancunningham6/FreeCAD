@@ -45,6 +45,10 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     libgomp1 \
     python3-lark \
     python3-packaging \
+    swig \
+    libicu-dev \
+    zlib1g-dev \
+    qt6-l10n-tools \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
@@ -92,7 +96,8 @@ RUN cmake -S /src -B /build \
     -DBUILD_TECHDRAW=OFF \
     -DBUILD_TEST=OFF \
     -DBUILD_TUX=OFF \
-    -DBUILD_WEB=OFF
+    -DBUILD_WEB=OFF \
+    -DFREECAD_USE_FREETYPE=OFF
 
 RUN cmake --build /build --parallel "$(nproc)"
 RUN cmake --install /build
