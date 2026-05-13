@@ -49,6 +49,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     libicu-dev \
     zlib1g-dev \
     qt6-l10n-tools \
+    qt6-tools-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
