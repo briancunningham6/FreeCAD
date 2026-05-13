@@ -50,6 +50,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     zlib1g-dev \
     qt6-l10n-tools \
     qt6-tools-dev \
+    libtbb-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
