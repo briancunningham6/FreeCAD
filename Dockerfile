@@ -52,6 +52,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     qt6-tools-dev \
     libtbb-dev \
     libfreetype-dev \
+    libharfbuzz-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
