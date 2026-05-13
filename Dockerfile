@@ -99,7 +99,8 @@ RUN cmake -S /src -B /build \
     -DBUILD_TEST=OFF \
     -DBUILD_TUX=OFF \
     -DBUILD_WEB=OFF \
-    -DFREECAD_USE_FREETYPE=OFF
+    -DFREECAD_USE_FREETYPE=OFF \
+    -DENABLE_DEVELOPER_TESTS=OFF
 
 RUN cmake --build /build --parallel "$(nproc)"
 RUN cmake --install /build
