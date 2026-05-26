@@ -86,6 +86,7 @@ for structural analysis via `ObjectsFem`, `femtools.ccxtools`, and
 ```bash
 cmake -S . -B build \
   -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_OSX_SYSROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk \
   -DBUILD_GUI=OFF \
   -DBUILD_FEM=ON \
   -DBUILD_ROBOT=OFF \
@@ -110,6 +111,11 @@ cmake -S . -B build \
 
 > `BUILD_IMPORT=OFF` — the Import module has OCCT RC compatibility issues and is
 > not needed by cadClaude (STEP export uses `shape.exportStep()` directly from Part).
+>
+> `CMAKE_OSX_SYSROOT` — must point to the stable MacOSX15.x SDK, not the beta.
+> The beta SDK (`MacOSX26.x`) is missing `libz.tbd`, causing linker failures in
+> SMESH and FreeCADBase. Use `xcodebuild -showsdks` to list available SDKs and
+> pick the highest stable `macosx15.x` entry.
 >
 > `BUILD_MATERIAL=ON` — must be kept ON; it is a hard dependency of `BUILD_PART`.
 > Always pass it explicitly: if it ever ends up OFF in the CMake cache and you
