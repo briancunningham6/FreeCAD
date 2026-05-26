@@ -79,14 +79,15 @@ git submodule update --init --recursive
 ### 2. Configure
 
 This is the configuration that produced the working build at `build/`.
-It targets headless use (no GUI, no FEM, no heavy workbenches) and uses the
-custom OCCT:
+It targets headless use (no GUI) and uses the custom OCCT. FEM is enabled
+for structural analysis via `ObjectsFem`, `femtools.ccxtools`, and
+`femmesh.gmshtools`:
 
 ```bash
 cmake -S . -B build \
   -DCMAKE_BUILD_TYPE=Release \
   -DBUILD_GUI=OFF \
-  -DBUILD_FEM=OFF \
+  -DBUILD_FEM=ON \
   -DBUILD_ROBOT=OFF \
   -DBUILD_ARCH=OFF \
   -DBUILD_BIM=OFF \
@@ -214,6 +215,53 @@ FREECAD_WORKER_PATH=/Users/user/freecad-cadclaude/bin/freecad-worker
 # FREECAD_PATH=/Users/user/dev/FreeCAD/build/bin/FreeCADCmd
 # FREECAD_WORKER_PY=/Users/user/dev/FreeCAD/src/Mod/CadClaude/cadclaude_worker.py
 ```
+
+---
+
+## FEM dependencies
+
+FEM execution requires two external tools beyond the FreeCAD build itself.
+
+### CalculiX solver
+
+`femtools.ccxtools` shells out to the `ccx` binary. Install it before running
+any FEM analysis:
+
+```bash
+# macOS
+brew install calculix
+
+# Ubuntu / Raspberry Pi worker
+sudo apt-get install -y calculix-ccx
+```
+
+Verify: `ccx --version` should print the CalculiX version string.
+
+### Gmsh mesher
+
+`femmesh.gmshtools` calls the `gmsh` Python package. Install it into the Python
+environment that FreeCAD uses:
+
+```bash
+# Using the installed prefix
+~/freecad-cadclaude/bin/python3 -m pip install gmsh
+
+# Using the build directory (Option B dev workflow)
+/opt/homebrew/bin/python3.11 -m pip install gmsh
+```
+
+### Verify FEM modules load
+
+```python
+import ObjectsFem
+import FreeCAD
+from femtools import ccxtools
+from femmesh import gmshtools
+print("FEM workbench OK")
+```
+
+Run this inside a FreeCAD worker session or via `FreeCADCmd` to confirm all
+FEM imports succeed before attempting a full analysis run.
 
 ---
 
