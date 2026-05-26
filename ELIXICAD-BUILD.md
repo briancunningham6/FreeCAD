@@ -89,6 +89,7 @@ cmake -S . -B build \
   -DCMAKE_OSX_SYSROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk \
   -DBUILD_GUI=OFF \
   -DBUILD_FEM=ON \
+  -DBUILD_ASSEMBLY=OFF \
   -DBUILD_ROBOT=OFF \
   -DBUILD_ARCH=OFF \
   -DBUILD_BIM=OFF \
@@ -104,6 +105,8 @@ cmake -S . -B build \
   -DBUILD_SPREADSHEET=OFF \
   -DBUILD_IMPORT=OFF \
   -DBUILD_MATERIAL=ON \
+  -DMEDFILE_INCLUDE_DIRS=/opt/homebrew/Cellar/med-file@5.0.0_py313/5.0.0_1/include \
+  -DMEDFILE_LIBRARIES=/opt/homebrew/Cellar/med-file@5.0.0_py313/5.0.0_1/lib/libmed.dylib \
   -DOCC_INCLUDE_DIR=/Users/user/dev/OCCT/install/include/opencascade \
   -DOCC_LIBRARY_DIR=/Users/user/dev/OCCT/install/lib \
   -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/icu4c@78;/opt/homebrew/opt/pybind11;/opt/homebrew/opt/xerces-c;/opt/homebrew/opt/boost;/opt/homebrew/opt/eigen"
@@ -116,6 +119,10 @@ cmake -S . -B build \
 > The beta SDK (`MacOSX26.x`) is missing `libz.tbd`, causing linker failures in
 > SMESH and FreeCADBase. Use `xcodebuild -showsdks` to list available SDKs and
 > pick the highest stable `macosx15.x` entry.
+>
+> `BUILD_ASSEMBLY=OFF` — the FreeCAD Assembly workbench defaults ON with FEM, but
+> it requires `BUILD_SPREADSHEET=ON`. Neither is needed for cadClaude; both are
+> disabled.
 >
 > `BUILD_MATERIAL=ON` — must be kept ON; it is a hard dependency of `BUILD_PART`.
 > Always pass it explicitly: if it ever ends up OFF in the CMake cache and you
