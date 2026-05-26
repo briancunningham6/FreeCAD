@@ -53,6 +53,19 @@ if [ ! -f "$WORKER_PY" ]; then
     exit 1
 fi
 
+# ── macOS dynamic library path ───────────────────────────────────────────────
+# FreeCADCmd's rpath only lists /usr/local/lib. On a custom build the libs live
+# in ../lib relative to the binary.  Qt6 and other deps come from miniforge3.
+# DYLD_LIBRARY_PATH is stripped by SIP for system binaries but works for
+# unsigned custom builds like ours.
+_FREECAD_INSTALL_DIR="$(cd "$(dirname "$FREECAD_BIN")/.." && pwd)"
+_FREECAD_LIB_DIR="$_FREECAD_INSTALL_DIR/lib"
+_CONDA_LIB_DIR="${CONDA_PREFIX:-$HOME/miniforge3}/lib"
+
+if [ -d "$_FREECAD_LIB_DIR" ] || [ -d "$_CONDA_LIB_DIR" ]; then
+    export DYLD_LIBRARY_PATH="${_FREECAD_LIB_DIR}:${_CONDA_LIB_DIR}${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+fi
+
 # ── Launch ────────────────────────────────────────────────────────────────────
 # -c puts FreeCAD in console mode (RunMode=Cmd, no GUI).
 # The inline Python string is not a valid filesystem path so FreeCAD falls
