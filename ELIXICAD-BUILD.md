@@ -90,6 +90,7 @@ cmake -S . -B build \
   -DBUILD_GUI=OFF \
   -DBUILD_FEM=ON \
   -DBUILD_ASSEMBLY=OFF \
+  -DBUILD_CAM=OFF \
   -DBUILD_ROBOT=OFF \
   -DBUILD_ARCH=OFF \
   -DBUILD_BIM=OFF \
@@ -123,6 +124,10 @@ cmake -S . -B build \
 > `BUILD_ASSEMBLY=OFF` — the FreeCAD Assembly workbench defaults ON with FEM, but
 > it requires `BUILD_SPREADSHEET=ON`. Neither is needed for cadClaude; both are
 > disabled.
+>
+> `BUILD_CAM=OFF` — the CAM workbench (formerly `BUILD_PATH`) also defaults ON and
+> requires a C++ extension header (`CXX/Extensions.hxx`) that is not available
+> without the full CAM toolchain. Not needed for FEM or CAD generation.
 >
 > `BUILD_MATERIAL=ON` — must be kept ON; it is a hard dependency of `BUILD_PART`.
 > Always pass it explicitly: if it ever ends up OFF in the CMake cache and you
