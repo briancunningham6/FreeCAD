@@ -79,16 +79,20 @@ git submodule update --init --recursive
 ### 2. Configure
 
 This is the configuration that produced the working build at `build/`.
-It targets headless use (no GUI) and uses the custom OCCT. FEM is enabled
-for structural analysis via `ObjectsFem`, `femtools.ccxtools`, and
-`femmesh.gmshtools`:
+It targets headless use (no GUI) and uses the custom OCCT. The FEM pipeline
+drives gmsh and ccx directly from Python — FreeCAD's FEM/Mesh modules are
+not needed and must be kept OFF:
 
 ```bash
 cmake -S . -B build \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_OSX_SYSROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk \
   -DBUILD_GUI=OFF \
-  -DBUILD_FEM=ON \
+  -DBUILD_FEM=OFF \
+  -DBUILD_MESH=OFF \
+  -DBUILD_MESH_PART=OFF \
+  -DBUILD_FLAT_MESH=OFF \
+  -DBUILD_MEASURE=OFF \
   -DBUILD_ASSEMBLY=OFF \
   -DBUILD_CAM=OFF \
   -DBUILD_ROBOT=OFF \
@@ -113,21 +117,27 @@ cmake -S . -B build \
   -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/icu4c@78;/opt/homebrew/opt/pybind11;/opt/homebrew/opt/xerces-c;/opt/homebrew/opt/boost;/opt/homebrew/opt/eigen"
 ```
 
+> `BUILD_FEM=OFF` / `BUILD_MESH=OFF` / `BUILD_MESH_PART=OFF` / `BUILD_FLAT_MESH=OFF` — the
+> cadClaude FEM pipeline drives gmsh and ccx directly from Python; FreeCAD's FEM/Mesh
+> C++ modules are not used. Keeping them ON causes `cmake --install` to fail: FEM
+> forces Mesh and MeshPart ON as dependencies, but those modules require GUI libraries
+> that are unavailable in a headless build, so their `.so` files are never produced.
+>
+> `BUILD_MEASURE=OFF` — the Measure module has a C++ extension (`Measure.so`) that is
+> not built in a headless configuration. Leaving it ON causes `cmake --install` to fail.
+>
 > `BUILD_IMPORT=OFF` — the Import module has OCCT RC compatibility issues and is
 > not needed by cadClaude (STEP export uses `shape.exportStep()` directly from Part).
 >
 > `CMAKE_OSX_SYSROOT` — must point to the stable MacOSX15.x SDK, not the beta.
 > The beta SDK (`MacOSX26.x`) is missing `libz.tbd`, causing linker failures in
-> SMESH and FreeCADBase. Use `xcodebuild -showsdks` to list available SDKs and
-> pick the highest stable `macosx15.x` entry.
+> FreeCADBase. Use `xcodebuild -showsdks` to list available SDKs and pick the
+> highest stable `macosx15.x` entry.
 >
-> `BUILD_ASSEMBLY=OFF` — the FreeCAD Assembly workbench defaults ON with FEM, but
-> it requires `BUILD_SPREADSHEET=ON`. Neither is needed for cadClaude; both are
-> disabled.
+> `BUILD_ASSEMBLY=OFF` — requires `BUILD_SPREADSHEET=ON`; neither needed for cadClaude.
 >
-> `BUILD_CAM=OFF` — the CAM workbench (formerly `BUILD_PATH`) also defaults ON and
-> requires a C++ extension header (`CXX/Extensions.hxx`) that is not available
-> without the full CAM toolchain. Not needed for FEM or CAD generation.
+> `BUILD_CAM=OFF` — requires a C++ extension header (`CXX/Extensions.hxx`) not
+> available without the full CAM toolchain.
 >
 > `BUILD_MATERIAL=ON` — must be kept ON; it is a hard dependency of `BUILD_PART`.
 > Always pass it explicitly: if it ever ends up OFF in the CMake cache and you
