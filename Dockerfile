@@ -107,6 +107,26 @@ RUN cmake -S /src -B /build \
 RUN cmake --build /build --parallel "$(nproc)"
 RUN cmake --install /build
 
+# ── FEM runtime dependencies ─────────────────────────────────────────────────
+# CalculiX: FEM solver invoked as `ccx` subprocess by the FEM analysis script.
+# python3-pip + system OpenGL: needed for gmsh and pyvista render dependencies.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    calculix-ccx \
+    python3-pip \
+    libgl1 \
+    libglu1-mesa \
+    libegl1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# gmsh: mesh generation, runs inside the FreeCAD worker (system Python 3.12)
+# pyvista + vtk: FEM result rendering, runs as a separate RENDER_PYTHON_PATH subprocess
+# vtk pinned <9.4 — 9.5+ has offscreen rendering regressions on some platforms
+RUN python3 -m pip install --no-cache-dir --break-system-packages \
+    gmsh \
+    "vtk>=9.3,<9.4" \
+    "pyvista>=0.43,<0.44" \
+    numpy
+
 # Verify all dynamic links resolve. Any "not found" line fails the build
 # rather than producing a broken image that fails silently at runtime.
 RUN ldd /opt/freecad/bin/FreeCADCmd \
@@ -115,6 +135,11 @@ RUN ldd /opt/freecad/bin/FreeCADCmd \
 
 ENV PATH=/opt/freecad/bin:$PATH
 ENV LD_LIBRARY_PATH=/opt/freecad/lib
+
+# FEM render: pyvista offscreen mode on headless Linux
+ENV PYVISTA_OFF_SCREEN=true
+# Render subprocess uses this Python (has pyvista, vtk, numpy installed above)
+ENV RENDER_PYTHON_PATH=/usr/bin/python3
 
 # Smoke-test: FreeCAD must start and print its version without errors.
 RUN FreeCADCmd --version
