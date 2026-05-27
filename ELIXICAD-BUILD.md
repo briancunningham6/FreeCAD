@@ -238,12 +238,13 @@ FREECAD_WORKER_PATH=/Users/user/freecad-cadclaude/bin/freecad-worker
 
 ## FEM dependencies
 
-FEM execution requires two external tools beyond the FreeCAD build itself.
+The FEM pipeline does **not** use FreeCAD's FEM/ccxtools stack. `ccxtools` requires
+PySide (GUI) which is unavailable in headless builds. Instead, the pipeline drives
+gmsh and CalculiX directly from plain Python.
 
-### CalculiX solver
+### CalculiX solver (`ccx`)
 
-`femtools.ccxtools` shells out to the `ccx` binary. Install it before running
-any FEM analysis:
+The FEM analysis script calls `ccx` as a subprocess. Install it system-wide:
 
 ```bash
 # macOS
@@ -255,31 +256,45 @@ sudo apt-get install -y calculix-ccx
 
 Verify: `ccx --version` should print the CalculiX version string.
 
-### Gmsh mesher
+### Gmsh mesher (Python package)
 
-`femmesh.gmshtools` calls the `gmsh` Python package. Install it into the Python
-environment that FreeCAD uses:
+The FEM script runs inside the FreeCAD worker. FreeCAD's embedded Python is
+**CPython 3.11** from `/Library/Frameworks/Python.framework/Versions/3.11`.
+Install gmsh there:
 
 ```bash
-# Using the installed prefix
-~/freecad-cadclaude/bin/python3 -m pip install gmsh
-
-# Using the build directory (Option B dev workflow)
-/opt/homebrew/bin/python3.11 -m pip install gmsh
+/Library/Frameworks/Python.framework/Versions/3.11/bin/python3 -m pip install gmsh
 ```
 
-### Verify FEM modules load
+Verify inside a FreeCAD worker session:
 
 ```python
-import ObjectsFem
-import FreeCAD
-from femtools import ccxtools
-from femmesh import gmshtools
-print("FEM workbench OK")
+import gmsh
+print("gmsh:", gmsh.__version__)
 ```
 
-Run this inside a FreeCAD worker session or via `FreeCADCmd` to confirm all
-FEM imports succeed before attempting a full analysis run.
+### FEM render Python (pyvista + vtk)
+
+The render script runs as a separate subprocess using `RENDER_PYTHON_PATH` (set in
+`.env`). The deploy install script sets this to the pixi conda Python and installs
+pyvista into it. vtk must be < 9.4 — vtk 9.5+ segfaults with the pyvista 0.43.x
+offscreen renderer on macOS arm64.
+
+```bash
+# The install.sh handles this automatically via pixi Python:
+$INSTALL_DIR/runtime-env/.pixi/envs/default/bin/python3 -m pip install \
+  "vtk>=9.3,<9.4" "pyvista>=0.43,<0.44" numpy
+
+# For the dev machine (miniforge3):
+/Users/user/miniforge3/bin/python3 -m pip install "vtk>=9.3,<9.4" "pyvista>=0.43,<0.44" numpy
+```
+
+Verify:
+
+```bash
+python3 -c "import pyvista; print('pyvista:', pyvista.__version__)"
+# pyvista: 0.43.x
+```
 
 ---
 
