@@ -257,8 +257,9 @@ gmsh and CalculiX directly from plain Python.
 The FEM analysis script calls `ccx` as a subprocess. Install it system-wide:
 
 ```bash
-# macOS
-brew install calculix
+# macOS (not in Homebrew core — use the freecad tap)
+brew tap freecad/freecad
+brew install freecad/freecad/calculix@2.23
 
 # Ubuntu / Raspberry Pi worker
 sudo apt-get install -y calculix-ccx
