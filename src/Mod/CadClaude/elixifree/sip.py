@@ -1,7 +1,14 @@
+# Deployed to Mod/CadClaude/elixifree/ alongside cadclaude_worker.py.
+# Keep in sync with FreeCAD repo: src/Mod/CadClaude/elixifree/sip.py
 """
-ElixiFree SIP domain module — wall panels.
-All functions take plain values and return native Part.Shape.
-Stock table matches sip_stock_materials.json catalog.
+ElixiFree SIP domain module.
+
+Design-stage functions (use these during component generation):
+  sip_wall(span, height, stock, openings) -> Shape
+  sip_roof_panel(span, depth, stock)      -> Shape
+
+Constructability functions (used by the assembly pipeline, not component generation):
+  sip_panel, spline_groove, route_core_channel, sip_constants
 """
 import Part
 from FreeCAD import Vector
@@ -15,12 +22,10 @@ _STOCK = {
     "SIP-300": (300, 11),
 }
 
-# Spline groove dimensions (mm) — matches sip_construction profile catalog
+# Spline groove dimensions (mm)
 _GROOVE_WIDTH = 45
 _GROOVE_DEPTH = 50
-
-# Bottom/top plate channel dimensions (mm)
-_CHANNEL_DEPTH = 90  # plate seats 90mm into the core
+_CHANNEL_DEPTH = 90
 
 
 def _resolve_stock(stock):
@@ -32,11 +37,58 @@ def _resolve_stock(stock):
     return core, face, core + 2 * face
 
 
+# ── Design-stage functions ────────────────────────────────────────────────────
+
+def sip_wall(span, height, stock="SIP-200", openings=None):
+    """
+    Design-intent wall: single solid block (span × thickness × height) with
+    spline grooves on both vertical edges and opening voids cut through full
+    thickness.
+
+    Axes: X = span, Y = total SIP thickness, Z = height.
+    The solid represents the full wall face — no panel splits, no plate routing,
+    no framing. Constructability detail is added later by the assembly pipeline.
+
+    openings: list of dicts with keys x, z, width, height (all mm, relative to
+              wall local origin). Each opening is cut full-depth through Y.
+              Example: [{"x": 1500, "z": 0, "width": 900, "height": 2100}]
+    """
+    core, face, total = _resolve_stock(stock)
+
+    # Single solid block
+    wall = Part.makeBox(span, total, height)
+
+    # Spline grooves on both vertical edges (left and right)
+    left_groove = Part.makeBox(_GROOVE_WIDTH, _GROOVE_DEPTH, height,
+                               Vector(0, face, 0))
+    right_groove = Part.makeBox(_GROOVE_WIDTH, _GROOVE_DEPTH, height,
+                                Vector(span - _GROOVE_WIDTH, face, 0))
+    wall = wall.cut(left_groove).cut(right_groove)
+
+    # Opening voids — cut full thickness
+    for o in (openings or []):
+        void = Part.makeBox(o["width"], total, o["height"],
+                            Vector(o["x"], 0, o["z"]))
+        wall = wall.cut(void)
+
+    return wall.removeSplitter()
+
+
+def sip_roof_panel(span, depth, stock="SIP-200"):
+    """
+    Design-intent roof panel: single solid block (span × thickness × depth).
+
+    Axes: X = span across slope, Y = total SIP thickness, Z = depth along slope.
+    No panel splits or construction detail — that is added by the assembly pipeline.
+    """
+    core, face, total = _resolve_stock(stock)
+    return Part.makeBox(span, total, depth)
+
+
+# ── Constructability functions (assembly pipeline use only) ──────────────────
+
 def sip_panel(width, height, stock="SIP-200"):
-    """
-    3-layer OSB/EPS/OSB solid.
-    Axes: X = panel width, Y = total thickness (OSB+core+OSB), Z = panel height.
-    """
+    """Single 3-layer OSB/EPS/OSB panel. Used by the constructable assembly pipeline."""
     core, face, total = _resolve_stock(stock)
     skin1 = Part.makeBox(width, face, height, Vector(0, 0, 0))
     foam = Part.makeBox(width, core, height, Vector(0, face, 0))
@@ -45,152 +97,42 @@ def sip_panel(width, height, stock="SIP-200"):
 
 
 def spline_groove(panel, side="left", stock="SIP-200"):
-    """
-    Cut a spline groove into the left or right edge of a panel.
-    Groove is cut from the face (Y=face_mm) into the core only — skins stay intact.
-    """
+    """Cut spline groove into panel edge. Used by the constructable assembly pipeline."""
     if side not in ("left", "right"):
         raise ValueError(f"spline_groove() side must be 'left' or 'right', got '{side}'")
     core, face, total = _resolve_stock(stock)
     bb = panel.BoundBox
-    height = bb.ZLength
-
-    if side == "left":
-        x = 0
-    else:
-        x = bb.XLength - _GROOVE_WIDTH
-
-    groove = Part.makeBox(_GROOVE_WIDTH, _GROOVE_DEPTH, height, Vector(x, face, 0))
+    x = 0 if side == "left" else bb.XLength - _GROOVE_WIDTH
+    groove = Part.makeBox(_GROOVE_WIDTH, _GROOVE_DEPTH, bb.ZLength, Vector(x, face, 0))
     return panel.cut(groove)
 
 
 def route_core_channel(panel, edge="bottom", stock="SIP-200"):
-    """
-    Route a plate channel into the foam core at the bottom or top edge.
-    Removes foam to depth _CHANNEL_DEPTH, leaving both OSB skins intact.
-    The channel is full-width and runs the full panel thickness (Y axis).
-    """
+    """Route plate channel into foam core. Used by the constructable assembly pipeline."""
     if edge not in ("bottom", "top"):
         raise ValueError(
             f"route_core_channel() edge must be 'bottom' or 'top', got '{edge}'"
         )
     core, face, total = _resolve_stock(stock)
     bb = panel.BoundBox
-    width = bb.XLength
-
-    if edge == "bottom":
-        z = 0
-    else:
-        z = bb.ZLength - _CHANNEL_DEPTH
-
-    # Cut only the core layer: Y from face to face+core
-    channel = Part.makeBox(width, core, _CHANNEL_DEPTH, Vector(0, face, z))
+    z = 0 if edge == "bottom" else bb.ZLength - _CHANNEL_DEPTH
+    channel = Part.makeBox(bb.XLength, core, _CHANNEL_DEPTH, Vector(0, face, z))
     return panel.cut(channel)
 
 
 def panel_zone(width, height, stock="SIP-200"):
-    """Alias for sip_panel — matches the 'panel zone' terminology in the SIP skill."""
+    """Alias for sip_panel."""
     return sip_panel(width, height, stock=stock)
 
 
 def sip_constants(stock="SIP-200"):
-    """
-    Return a dict of construction constants for the given stock.
-    Saves scripts from re-deriving face/core/total thickness values.
-
-    Keys: face, core, total, bottom_plate_h, top_plate_h, groove_width, groove_depth, channel_depth
-    """
+    """Return construction constants for the given stock."""
     core, face, total = _resolve_stock(stock)
     return {
         "face": face,
         "core": core,
         "total": total,
-        "bottom_plate_h": _BOTTOM_PLATE_H,
-        "top_plate_h": _TOP_PLATE_H,
         "groove_width": _GROOVE_WIDTH,
         "groove_depth": _GROOVE_DEPTH,
         "channel_depth": _CHANNEL_DEPTH,
     }
-
-
-# Wall assembly constants (from sip_construction catalog)
-_PANEL_SHEET_WIDTH = 1220   # standard SIP sheet width mm
-_BOTTOM_PLATE_H = 90        # PT timber sole plate height mm
-_TOP_PLATE_H = 180          # double top plate (2× 45mm) height mm
-_SPLINE_WIDTH = 45          # inter-panel spline timber width mm
-
-
-def sip_wall(span, panel_height, stock="SIP-200"):
-    """
-    Complete SIP wall assembly: sole plate + SIP panel array + inter-panel splines
-    + double top plate. Returns a single fused Part.Shape ready to add to the doc.
-
-    Axes: X = wall span, Y = total panel thickness, Z = full wall height
-    (= BOTTOM_PLATE_H + panel_height + TOP_PLATE_H).
-
-    The LLM only supplies span, panel_height, and stock. All construction rules
-    (plate dimensions, spline spacing, groove routing) are encoded here.
-
-    For walls with openings use the lower-level functions (sip_panel, spline_groove,
-    route_core_channel) and raw Part calls to handle the buck geometry.
-
-    NOTE: panel_height is the SIP sheet height (e.g. 2440), NOT the total wall height.
-    Sole plate (90mm) and double top plate (180mm) are added automatically.
-    Do NOT pass (total_wall_height - 270) — pass the sheet height directly.
-    """
-    if panel_height < 500:
-        import logging
-        logging.getLogger(__name__).warning(
-            "sip_wall() panel_height=%s looks too small — did you subtract plate heights? "
-            "Pass the SIP sheet height directly (e.g. 2440), not total_height - 270.",
-            panel_height,
-        )
-    core, face, total = _resolve_stock(stock)
-
-    import math
-    n_panels = math.ceil(span / _PANEL_SHEET_WIDTH)
-    # Distribute span evenly across panels (last panel takes the remainder)
-    panel_widths = [_PANEL_SHEET_WIDTH] * (n_panels - 1)
-    panel_widths.append(span - _PANEL_SHEET_WIDTH * (n_panels - 1))
-
-    # 1. Sole plate — sits at Z=0, panels start at Z=_BOTTOM_PLATE_H
-    sole_plate = Part.makeBox(span, core, _BOTTOM_PLATE_H, Vector(0, face, 0))
-
-    # 2. SIP panel array — routed top and bottom, spline grooves on interior joints
-    x = 0
-    panel_solids = []
-    for i, pw in enumerate(panel_widths):
-        p = sip_panel(pw, panel_height, stock=stock)
-        p = route_core_channel(p, edge="bottom", stock=stock)
-        p = route_core_channel(p, edge="top", stock=stock)
-        if i > 0:
-            p = spline_groove(p, side="left", stock=stock)
-        if i < n_panels - 1:
-            p = spline_groove(p, side="right", stock=stock)
-        # Translate to position: X offset, Z raised by sole plate
-        copy = p.copy()
-        copy.translate(Vector(x, 0, _BOTTOM_PLATE_H))
-        panel_solids.append(copy)
-        x += pw
-
-    # 3. Inter-panel splines — 45mm wide, core depth, full panel height
-    spline_solids = []
-    x = 0
-    for pw in panel_widths[:-1]:
-        x += pw
-        spline = Part.makeBox(
-            _SPLINE_WIDTH, core, panel_height,
-            Vector(x - _SPLINE_WIDTH / 2, face, _BOTTOM_PLATE_H)
-        )
-        spline_solids.append(spline)
-
-    # 4. Double top plate — sits immediately above panels
-    top_z = _BOTTOM_PLATE_H + panel_height
-    top_plate = Part.makeBox(span, core, _TOP_PLATE_H, Vector(0, face, top_z))
-
-    # 5. Fuse everything
-    result = sole_plate
-    for s in panel_solids + spline_solids:
-        result = result.fuse(s)
-    result = result.fuse(top_plate)
-    return result.removeSplitter()
