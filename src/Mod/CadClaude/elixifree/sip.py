@@ -91,3 +91,75 @@ def route_core_channel(panel, edge="bottom", stock="SIP-200"):
 def panel_zone(width, height, stock="SIP-200"):
     """Alias for sip_panel — matches the 'panel zone' terminology in the SIP skill."""
     return sip_panel(width, height, stock=stock)
+
+
+# Wall assembly constants (from sip_construction catalog)
+_PANEL_SHEET_WIDTH = 1220   # standard SIP sheet width mm
+_BOTTOM_PLATE_H = 90        # PT timber sole plate height mm
+_TOP_PLATE_H = 180          # double top plate (2× 45mm) height mm
+_SPLINE_WIDTH = 45          # inter-panel spline timber width mm
+
+
+def sip_wall(span, panel_height, stock="SIP-200"):
+    """
+    Complete SIP wall assembly: sole plate + SIP panel array + inter-panel splines
+    + double top plate. Returns a single fused Part.Shape ready to add to the doc.
+
+    Axes: X = wall span, Y = total panel thickness, Z = full wall height
+    (= BOTTOM_PLATE_H + panel_height + TOP_PLATE_H).
+
+    The LLM only supplies span, panel_height, and stock. All construction rules
+    (plate dimensions, spline spacing, groove routing) are encoded here.
+
+    For walls with openings use the lower-level functions (sip_panel, spline_groove,
+    route_core_channel) and raw Part calls to handle the buck geometry.
+    """
+    core, face, total = _resolve_stock(stock)
+
+    import math
+    n_panels = math.ceil(span / _PANEL_SHEET_WIDTH)
+    # Distribute span evenly across panels (last panel takes the remainder)
+    panel_widths = [_PANEL_SHEET_WIDTH] * (n_panels - 1)
+    panel_widths.append(span - _PANEL_SHEET_WIDTH * (n_panels - 1))
+
+    # 1. Sole plate — sits at Z=0, panels start at Z=_BOTTOM_PLATE_H
+    sole_plate = Part.makeBox(span, core, _BOTTOM_PLATE_H, Vector(0, face, 0))
+
+    # 2. SIP panel array — routed top and bottom, spline grooves on interior joints
+    x = 0
+    panel_solids = []
+    for i, pw in enumerate(panel_widths):
+        p = sip_panel(pw, panel_height, stock=stock)
+        p = route_core_channel(p, edge="bottom", stock=stock)
+        p = route_core_channel(p, edge="top", stock=stock)
+        if i > 0:
+            p = spline_groove(p, side="left", stock=stock)
+        if i < n_panels - 1:
+            p = spline_groove(p, side="right", stock=stock)
+        # Translate to position: X offset, Z raised by sole plate
+        copy = p.copy()
+        copy.translate(Vector(x, 0, _BOTTOM_PLATE_H))
+        panel_solids.append(copy)
+        x += pw
+
+    # 3. Inter-panel splines — 45mm wide, core depth, full panel height
+    spline_solids = []
+    x = 0
+    for pw in panel_widths[:-1]:
+        x += pw
+        spline = Part.makeBox(
+            _SPLINE_WIDTH, core, panel_height,
+            Vector(x - _SPLINE_WIDTH / 2, face, _BOTTOM_PLATE_H)
+        )
+        spline_solids.append(spline)
+
+    # 4. Double top plate — sits immediately above panels
+    top_z = _BOTTOM_PLATE_H + panel_height
+    top_plate = Part.makeBox(span, core, _TOP_PLATE_H, Vector(0, face, top_z))
+
+    # 5. Fuse everything
+    result = sole_plate
+    for s in panel_solids + spline_solids:
+        result = result.fuse(s)
+    result = result.fuse(top_plate)
+    return result.removeSplitter()

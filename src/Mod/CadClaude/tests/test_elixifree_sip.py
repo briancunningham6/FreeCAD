@@ -5,7 +5,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
-from elixifree.sip import sip_panel, spline_groove, route_core_channel, panel_zone
+from elixifree.sip import sip_panel, spline_groove, route_core_channel, panel_zone, sip_wall
 
 
 # Stock table expected values: (core_mm, face_mm, total_mm)
@@ -91,3 +91,31 @@ def test_panel_zone_is_alias_for_sip_panel():
     p1 = sip_panel(1200, 2700, stock="SIP-150")
     p2 = panel_zone(1200, 2700, stock="SIP-150")
     assert abs(p1.Volume - p2.Volume) < 0.01
+
+
+def test_sip_wall_total_height():
+    # 90 sole plate + 2440 panels + 180 double top plate = 2710
+    w = sip_wall(4000, 2440, stock="SIP-100")
+    assert abs(w.BoundBox.ZLength - (90 + 2440 + 180)) < 1.0
+
+
+def test_sip_wall_span():
+    w = sip_wall(4000, 2440, stock="SIP-100")
+    assert abs(w.BoundBox.XLength - 4000) < 1.0
+
+
+def test_sip_wall_thickness():
+    w = sip_wall(4000, 2440, stock="SIP-100")
+    assert abs(w.BoundBox.YLength - 122) < 1.0
+
+
+def test_sip_wall_is_valid_shape():
+    w = sip_wall(3000, 2440, stock="SIP-150")
+    assert w.isValid()
+    assert w.Volume > 0
+
+
+def test_sip_wall_short_span():
+    # Span shorter than one sheet — single panel
+    w = sip_wall(900, 2440, stock="SIP-200")
+    assert abs(w.BoundBox.XLength - 900) < 1.0
