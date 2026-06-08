@@ -153,8 +153,6 @@ def _script_globals():
     from FreeCAD import Vector, Placement, Rotation
     import elixifree
 
-    doc = FreeCAD.ActiveDocument or FreeCAD.newDocument("Model")
-
     return {
         "FreeCAD": FreeCAD,
         "Part": Part,
@@ -163,7 +161,6 @@ def _script_globals():
         "Placement": Placement,
         "Rotation": Rotation,
         "elixifree": elixifree,
-        "doc": doc,
     }
 
 
