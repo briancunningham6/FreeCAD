@@ -93,6 +93,26 @@ def panel_zone(width, height, stock="SIP-200"):
     return sip_panel(width, height, stock=stock)
 
 
+def sip_constants(stock="SIP-200"):
+    """
+    Return a dict of construction constants for the given stock.
+    Saves scripts from re-deriving face/core/total thickness values.
+
+    Keys: face, core, total, bottom_plate_h, top_plate_h, groove_width, groove_depth, channel_depth
+    """
+    core, face, total = _resolve_stock(stock)
+    return {
+        "face": face,
+        "core": core,
+        "total": total,
+        "bottom_plate_h": _BOTTOM_PLATE_H,
+        "top_plate_h": _TOP_PLATE_H,
+        "groove_width": _GROOVE_WIDTH,
+        "groove_depth": _GROOVE_DEPTH,
+        "channel_depth": _CHANNEL_DEPTH,
+    }
+
+
 # Wall assembly constants (from sip_construction catalog)
 _PANEL_SHEET_WIDTH = 1220   # standard SIP sheet width mm
 _BOTTOM_PLATE_H = 90        # PT timber sole plate height mm
