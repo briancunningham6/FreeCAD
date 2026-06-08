@@ -113,7 +113,18 @@ def sip_wall(span, panel_height, stock="SIP-200"):
 
     For walls with openings use the lower-level functions (sip_panel, spline_groove,
     route_core_channel) and raw Part calls to handle the buck geometry.
+
+    NOTE: panel_height is the SIP sheet height (e.g. 2440), NOT the total wall height.
+    Sole plate (90mm) and double top plate (180mm) are added automatically.
+    Do NOT pass (total_wall_height - 270) — pass the sheet height directly.
     """
+    if panel_height < 500:
+        import logging
+        logging.getLogger(__name__).warning(
+            "sip_wall() panel_height=%s looks too small — did you subtract plate heights? "
+            "Pass the SIP sheet height directly (e.g. 2440), not total_height - 270.",
+            panel_height,
+        )
     core, face, total = _resolve_stock(stock)
 
     import math
