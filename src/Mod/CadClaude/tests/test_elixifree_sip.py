@@ -81,6 +81,12 @@ def test_route_core_channel_top():
     assert channelled.Volume < p.Volume
 
 
+def test_route_core_channel_invalid_edge():
+    p = sip_panel(1200, 2700)
+    with pytest.raises(ValueError):
+        route_core_channel(p, edge="left")
+
+
 def test_panel_zone_is_alias_for_sip_panel():
     p1 = sip_panel(1200, 2700, stock="SIP-150")
     p2 = panel_zone(1200, 2700, stock="SIP-150")
