@@ -2,9 +2,6 @@
 ElixiFree — declarative CAD primitives over native FreeCAD Part.
 All functions return Part.Shape. No custom objects, no document state.
 """
-import importlib
-import sys
-
 import FreeCAD
 import Part
 from FreeCAD import Vector
@@ -69,7 +66,9 @@ def fillet(shape, radius, edge_selector=None):
         if edge_selector is not None:
             edges = [e for e in edges if edge_selector(e)]
         return shape.makeFillet(radius, edges)
-    except Exception:
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).debug("fillet failed, returning shape unmodified: %s", e)
         return shape
 
 
@@ -83,7 +82,9 @@ def chamfer(shape, size, edge_selector=None):
         if edge_selector is not None:
             edges = [e for e in edges if edge_selector(e)]
         return shape.makeChamfer(size, edges)
-    except Exception:
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).debug("chamfer failed, returning shape unmodified: %s", e)
         return shape
 
 
