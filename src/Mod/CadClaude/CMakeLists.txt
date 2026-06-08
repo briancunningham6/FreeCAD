@@ -12,3 +12,10 @@ INSTALL(
     DESTINATION
         Mod/CadClaude
 )
+
+INSTALL(
+    DIRECTORY
+        elixifree
+    DESTINATION
+        Mod/CadClaude
+)
