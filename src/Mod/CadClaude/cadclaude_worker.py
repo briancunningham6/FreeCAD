@@ -141,29 +141,6 @@ def _fix_common_mistakes(script_source):
     return script_source
 
 
-def _script_globals():
-    """
-    Pre-populated globals for every executed script.
-    Scripts can use FreeCAD, Part, Vector, math, and elixifree without importing them.
-    Explicit imports in the script still work — they simply overwrite these bindings.
-    """
-    import FreeCAD
-    import Part
-    import math
-    from FreeCAD import Vector, Placement, Rotation
-    import elixifree
-
-    return {
-        "FreeCAD": FreeCAD,
-        "Part": Part,
-        "math": math,
-        "Vector": Vector,
-        "Placement": Placement,
-        "Rotation": Rotation,
-        "elixifree": elixifree,
-    }
-
-
 def _run_script(script_source):
     """
     Execute script_source, capturing stdout/stderr.
@@ -179,7 +156,7 @@ def _run_script(script_source):
     sys.stderr = captured
 
     try:
-        exec(compile(script_source, "<cadclaude>", "exec"), _script_globals())
+        exec(compile(script_source, "<cadclaude>", "exec"), {})
         error = None
     except SystemExit:
         # Scripts call sys.exit(0) — treat as clean completion
