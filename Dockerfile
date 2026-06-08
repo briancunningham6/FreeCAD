@@ -110,20 +110,21 @@ RUN cmake --install /build
 # ── FEM runtime dependencies ─────────────────────────────────────────────────
 # CalculiX: FEM solver invoked as `ccx` subprocess by the FEM analysis script.
 # python3-pip + system OpenGL: needed for gmsh and pyvista render dependencies.
+# python3-gmsh and python3-vtk9: installed via system package manager as arm64 wheels
+# for gmsh and vtk (version < 9.4) are not officially provided on PyPI.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     calculix-ccx \
     python3-pip \
+    python3-gmsh \
+    python3-vtk9 \
     libgl1 \
     libglu1-mesa \
     libegl1 \
     && rm -rf /var/lib/apt/lists/*
 
-# gmsh: mesh generation, runs inside the FreeCAD worker (system Python 3.12)
-# pyvista + vtk: FEM result rendering, runs as a separate RENDER_PYTHON_PATH subprocess
-# vtk pinned <9.4 — 9.5+ has offscreen rendering regressions on some platforms
+# gmsh + vtk: installed above via apt to support all platforms including arm64
+# pyvista + numpy: FEM result rendering dependencies
 RUN python3 -m pip install --no-cache-dir --break-system-packages \
-    gmsh \
-    "vtk>=9.3,<9.4" \
     "pyvista>=0.43,<0.44" \
     numpy
 
