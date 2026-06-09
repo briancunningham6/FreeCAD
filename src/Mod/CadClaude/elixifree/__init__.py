@@ -2,6 +2,7 @@
 ElixiFree — declarative CAD primitives over native FreeCAD Part.
 All functions return Part.Shape. No custom objects, no document state.
 """
+from elixifree.builder import BuildResult, BuildError, ComponentBuilder
 import FreeCAD
 import Part
 from FreeCAD import Vector
