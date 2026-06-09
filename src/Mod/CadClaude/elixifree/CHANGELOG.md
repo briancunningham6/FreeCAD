@@ -5,6 +5,22 @@ Format: `## [version] — YYYY-MM-DD` followed by Added / Changed / Fixed sectio
 
 ---
 
+## [0.2.1] — 2026-06-09
+
+### Changed
+- `elixifree/sip.py` — removed duplicated symbols (`sip_wall`, `sip_roof_panel`,
+  `_STOCK`, `_resolve_stock`, `_GROOVE_WIDTH`, `_GROOVE_DEPTH`, `sip_constants`).
+  Shared internals are now imported from `elixifree.domains.sip`. Public API of the
+  constructability layer (`sip_panel`, `spline_groove`, `route_core_channel`,
+  `panel_zone`) is unchanged.
+- Old flat test files in `tests/` deleted — all tests now live under `elixifree/tests/`.
+
+### Added
+- `elixifree/tests/test_sip_constructable.py` — 12 tests for the constructability layer,
+  organised into `TestSipPanel`, `TestSplineGroove`, `TestRouteCoreChannel`, `TestPanelZone`.
+
+---
+
 ## [0.2.0] — 2026-06-09
 
 ### Added
