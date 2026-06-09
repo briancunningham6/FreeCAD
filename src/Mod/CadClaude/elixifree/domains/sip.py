@@ -121,3 +121,108 @@ class Wall(ComponentBuilder):
             "stock": self._stock,
             "openings": list(self._openings),
         }
+
+
+class RoofPanel(ComponentBuilder):
+    """
+    Design-intent SIP roof panel: single solid (span x thickness x depth).
+
+    Axes: X = span across slope, Y = total SIP thickness, Z = depth along slope.
+    No panel splits or construction detail — that is the assembly pipeline's job.
+
+    .pitch(degrees) — logs a gap (pitched geometry not yet in library) and applies
+    a raw taper cut. This makes the gap visible for future development.
+    """
+
+    def __init__(self, span, depth, stock="SIP-200"):
+        super().__init__()
+        self._span = span
+        self._depth = depth
+        self._stock = stock
+        self._pitch_degrees = None
+
+    def pitch(self, degrees):
+        """Set roof pitch. Currently logs a gap and applies a raw taper cut."""
+        self._pitch_degrees = degrees
+        return self
+
+    def _validate(self):
+        if self._span <= 0:
+            raise BuildError(f"RoofPanel span must be positive, got {self._span}")
+        if self._depth <= 0:
+            raise BuildError(f"RoofPanel depth must be positive, got {self._depth}")
+        _resolve_stock(self._stock)
+
+    def _build_geometry(self):
+        import math
+        core, face, total = _resolve_stock(self._stock)
+        panel = Part.makeBox(self._span, total, self._depth)
+
+        if self._pitch_degrees is not None:
+            self._log_gap(
+                f"pitch: pitched roof panels (pitch={self._pitch_degrees}deg) not yet "
+                f"supported declaratively — using raw taper cut"
+            )
+            fall = self._depth * math.tan(math.radians(self._pitch_degrees))
+            if fall > 0.5:
+                taper_pts = [
+                    Vector(0, 0, total),
+                    Vector(0, 0, total + fall + 10),
+                    Vector(0, self._depth, total + 10),
+                    Vector(0, self._depth, total),
+                    Vector(0, 0, total),
+                ]
+                wire = Part.makePolygon(taper_pts)
+                face_shape = Part.Face(wire)
+                taper_cut = face_shape.extrude(Vector(self._span, 0, 0))
+                panel = panel.cut(taper_cut)
+
+        return panel
+
+    def _params(self):
+        p = {"span": self._span, "depth": self._depth, "stock": self._stock}
+        if self._pitch_degrees is not None:
+            p["pitch_degrees"] = self._pitch_degrees
+        return p
+
+
+class Foundation(ComponentBuilder):
+    """
+    Design-intent SIP foundation: concrete slab solid (length x width x depth).
+
+    Axes: X = length, Y = width, Z = depth (thickness of slab).
+    type: "concrete_slab" (default) — only type currently supported.
+    """
+
+    _SUPPORTED_TYPES = ("concrete_slab",)
+
+    def __init__(self, length, width, depth, type="concrete_slab"):
+        super().__init__()
+        self._length = length
+        self._width = width
+        self._depth = depth
+        self._type = type
+
+    def _validate(self):
+        if self._length <= 0:
+            raise BuildError(f"Foundation length must be positive, got {self._length}")
+        if self._width <= 0:
+            raise BuildError(f"Foundation width must be positive, got {self._width}")
+        if self._depth <= 0:
+            raise BuildError(f"Foundation depth must be positive, got {self._depth}")
+        if self._type not in self._SUPPORTED_TYPES:
+            self._log_gap(
+                f"foundation_type: '{self._type}' not supported — "
+                f"falling back to concrete_slab geometry"
+            )
+
+    def _build_geometry(self):
+        return Part.makeBox(self._length, self._width, self._depth)
+
+    def _params(self):
+        return {
+            "length": self._length,
+            "width": self._width,
+            "depth": self._depth,
+            "type": self._type,
+        }
