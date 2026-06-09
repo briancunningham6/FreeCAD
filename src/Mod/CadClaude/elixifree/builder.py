@@ -30,7 +30,12 @@ class BuildResult:
         """
         import FreeCAD
         if doc is None:
-            doc = FreeCAD.ActiveDocument or FreeCAD.newDocument(name)
+            doc = FreeCAD.ActiveDocument
+            if doc is None:
+                doc = FreeCAD.newDocument(name)
+                # newDocument does not set ActiveDocument in headless mode —
+                # set it explicitly so the worker can export after recompute.
+                FreeCAD.setActiveDocument(doc.Name)
         feature = doc.addObject("Part::Feature", name)
         feature.Shape = self.shape
         doc.recompute()
