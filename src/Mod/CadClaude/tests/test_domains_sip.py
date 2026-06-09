@@ -75,3 +75,44 @@ def test_wall_spline_grooves_reduce_volume():
 def test_wall_no_gaps_for_plain_wall():
     result = Wall(span=4000, height=2440, stock="SIP-100").build()
     assert result.gaps == []
+
+
+# ── Wall — with openings ──────────────────────────────────────────────────────
+
+def test_wall_with_door_opening_reduces_volume():
+    plain = Wall(span=4000, height=2440, stock="SIP-100").build()
+    with_door = (Wall(span=4000, height=2440, stock="SIP-100")
+        .opening(x=1500, z=0, width=900, height=2100)
+        .build())
+    assert with_door.shape.Volume < plain.shape.Volume
+
+
+def test_wall_opening_params_captured():
+    result = (Wall(span=4000, height=2440, stock="SIP-100")
+        .opening(x=1500, z=0, width=900, height=2100)
+        .build())
+    assert len(result.params["openings"]) == 1
+    assert result.params["openings"][0]["width"] == 900
+
+
+def test_wall_multiple_openings():
+    result = (Wall(span=5000, height=2440, stock="SIP-100")
+        .opening(x=500, z=800, width=1200, height=1000)
+        .opening(x=3000, z=0, width=900, height=2100)
+        .build())
+    assert len(result.params["openings"]) == 2
+    assert result.shape.isValid()
+
+
+def test_wall_opening_outside_span_raises():
+    with pytest.raises(BuildError):
+        (Wall(span=4000, height=2440)
+            .opening(x=3500, z=0, width=900, height=2100)
+            .build())
+
+
+def test_wall_opening_outside_height_raises():
+    with pytest.raises(BuildError):
+        (Wall(span=4000, height=2440)
+            .opening(x=1500, z=2000, width=900, height=600)
+            .build())
