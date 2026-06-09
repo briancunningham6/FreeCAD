@@ -1,26 +1,45 @@
 """
 ElixiFree SIP domain builders.
 
-Design-stage builders (use these in component generation scripts):
-  Wall(span, height, stock)          — plain wall or wall with openings
-  RoofPanel(span, depth, stock)      — flat or pitched roof panel
-  Foundation(length, width, depth)   — concrete slab foundation
+Design-stage builders for Structural Insulated Panel (SIP) construction.
+These represent the *design intent* of a component — a single solid body with
+the correct outer dimensions and opening voids.  Panel splits, sole plates,
+splines, and structural framing are added by the constructability layer, not here.
 
-Each builder returns a BuildResult with .shape (Part.Shape), .params (dict),
-and .gaps (list of strings for library gaps encountered).
+Builders:
+    Wall(span, height, stock)         — plain wall, optionally with openings
+    RoofPanel(span, depth, stock)     — flat or pitched roof panel
+    Foundation(length, width, depth)  — concrete slab foundation
 
-Usage:
-  from elixifree.domains.sip import Wall
+Each builder follows the fluent pattern — chain method calls, then call
+``.build()`` to get a ``BuildResult``::
 
-  result = (Wall(span=4000, height=2440, stock="SIP-100")
-      .opening(x=1500, z=0, width=900, height=2100)
-      .build())
-  result.add_to_doc("Body")
+    from elixifree.domains.sip import Wall
+
+    result = (Wall(span=4000, height=2440, stock="SIP-100")
+        .opening(x=1500, z=0, width=900, height=2100)
+        .build())
+    result.add_to_doc("Body")
+
+Coordinate axes (all builders):
+    X = span / length
+    Y = total SIP thickness
+    Z = height / depth
+
+Use ``sip_constants(stock)`` to look up face, core, and total thickness values
+instead of hardcoding them in scripts.
 """
 import Part
 from FreeCAD import Vector
 
 from elixifree.builder import ComponentBuilder, BuildError
+
+__all__ = [
+    "Wall",
+    "RoofPanel",
+    "Foundation",
+    "sip_constants",
+]
 
 # Stock table: name -> (core_mm, face_mm)
 _STOCK = {
