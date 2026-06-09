@@ -206,6 +206,12 @@ elixifree/
 
 ---
 
+## API Reference
+
+Full API documentation — every function, class, parameter, return type, and exception — is in **[API.md](API.md)**.
+
+---
+
 ## Design principles
 
 1. **Declarative over imperative** — builders accept parameters, not geometry instructions
