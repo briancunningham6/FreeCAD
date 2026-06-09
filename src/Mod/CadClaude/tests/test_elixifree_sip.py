@@ -94,9 +94,9 @@ def test_panel_zone_is_alias_for_sip_panel():
 
 
 def test_sip_wall_total_height():
-    # 90 sole plate + 2440 panels + 180 double top plate = 2710
+    # sip_wall() is design-first: returns height as passed (no plate addition)
     w = sip_wall(4000, 2440, stock="SIP-100")
-    assert abs(w.BoundBox.ZLength - (90 + 2440 + 180)) < 1.0
+    assert abs(w.BoundBox.ZLength - 2440) < 1.0
 
 
 def test_sip_wall_span():
