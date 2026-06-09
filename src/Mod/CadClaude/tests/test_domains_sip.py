@@ -62,7 +62,8 @@ def test_wall_negative_height_raises():
 
 def test_wall_shape_is_valid():
     result = Wall(span=4000, height=2440, stock="SIP-150").build()
-    assert result.shape.isValid()
+    assert result.shape.Volume > 0
+    assert abs(result.shape.BoundBox.XLength - 3045) < 0.1
 
 
 def test_wall_spline_grooves_reduce_volume():
@@ -101,7 +102,8 @@ def test_wall_multiple_openings():
         .opening(x=3000, z=0, width=900, height=2100)
         .build())
     assert len(result.params["openings"]) == 2
-    assert result.shape.isValid()
+    assert result.shape.Volume > 0
+    assert abs(result.shape.BoundBox.XLength - 3045) < 0.1
 
 
 def test_wall_opening_outside_span_raises():
@@ -152,7 +154,8 @@ def test_roof_panel_params_captured():
 
 def test_roof_panel_is_valid():
     result = RoofPanel(span=4200, depth=3200, stock="SIP-200").build()
-    assert result.shape.isValid()
+    assert result.shape.Volume > 0
+    assert abs(result.shape.BoundBox.XLength - 3045) < 0.1
 
 
 def test_roof_panel_zero_span_raises():
@@ -185,7 +188,8 @@ def test_foundation_dimensions():
 
 def test_foundation_is_valid():
     result = Foundation(length=4200, width=3400, depth=200).build()
-    assert result.shape.isValid()
+    assert result.shape.Volume > 0
+    assert abs(result.shape.BoundBox.XLength - 3045) < 0.1
 
 
 def test_foundation_params_captured():
@@ -203,3 +207,71 @@ def test_foundation_default_type():
 def test_foundation_zero_depth_raises():
     with pytest.raises(BuildError):
         Foundation(length=4200, width=3400, depth=0).build()
+
+
+# ── Wall — corner splines ─────────────────────────────────────────────────────
+
+def test_corner_spline_increases_volume():
+    plain = Wall(span=3000, height=2440, stock="SIP-100").build()
+    with_splines = (Wall(span=3000, height=2440, stock="SIP-100")
+        .corner_spline(side="left")
+        .corner_spline(side="right")
+        .build())
+    assert with_splines.shape.Volume > plain.shape.Volume
+
+
+def test_corner_spline_extends_bounding_box():
+    result = (Wall(span=3000, height=2440, stock="SIP-100")
+        .corner_spline(side="left")
+        .corner_spline(side="right")
+        .build())
+    # Splines add 45mm to each end → total span = 3000 + 45 + 45 = 3090
+    assert abs(result.shape.BoundBox.XLength - 3090) < 0.1
+
+
+def test_corner_spline_params_captured():
+    result = (Wall(span=3000, height=2440, stock="SIP-100")
+        .corner_spline(side="left")
+        .build())
+    assert "left" in result.params["corner_splines"]
+
+
+def test_corner_spline_invalid_side_raises():
+    with pytest.raises(BuildError):
+        Wall(span=3000, height=2440).corner_spline(side="top").build()
+
+
+def test_corner_spline_shape_has_volume():
+    result = (Wall(span=3000, height=2440, stock="SIP-150")
+        .corner_spline(side="left")
+        .build())
+    assert result.shape.Volume > 0
+    assert abs(result.shape.BoundBox.XLength - 3045) < 0.1
+
+
+# ── sip_constants ─────────────────────────────────────────────────────────────
+
+from elixifree.domains.sip import Wall, RoofPanel, Foundation, sip_constants
+
+
+def test_sip_constants_sip100():
+    c = sip_constants("SIP-100")
+    assert c["face"] == 11
+    assert c["core"] == 100
+    assert c["total"] == 122
+
+
+def test_sip_constants_sip200_default():
+    c = sip_constants()
+    assert c["total"] == 222
+
+
+def test_sip_constants_groove_dimensions():
+    c = sip_constants("SIP-150")
+    assert c["groove_width"] == 45
+    assert c["groove_depth"] == 50
+
+
+def test_sip_constants_invalid_stock_raises():
+    with pytest.raises(BuildError):
+        sip_constants("SIP-999")

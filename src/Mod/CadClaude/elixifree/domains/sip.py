@@ -45,6 +45,27 @@ def _resolve_stock(stock):
     return core, face, core + 2 * face
 
 
+def sip_constants(stock="SIP-200"):
+    """
+    Return a dict of construction constants for the given stock.
+    Use this instead of hardcoding CORE_THICKNESS, FACE_THICKNESS etc.
+
+    Keys: face, core, total, groove_width, groove_depth
+    Example:
+        from elixifree.domains.sip import sip_constants
+        c = sip_constants("SIP-100")
+        # c["face"]=11, c["core"]=100, c["total"]=122
+    """
+    core, face, total = _resolve_stock(stock)
+    return {
+        "face": face,
+        "core": core,
+        "total": total,
+        "groove_width": _GROOVE_WIDTH,
+        "groove_depth": _GROOVE_DEPTH,
+    }
+
+
 class Wall(ComponentBuilder):
     """
     Design-intent SIP wall: single solid (span x thickness x height) with
@@ -60,6 +81,7 @@ class Wall(ComponentBuilder):
         self._height = height
         self._stock = stock
         self._openings = []
+        self._corner_splines = []
 
     def opening(self, x, z, width, height):
         """
@@ -69,6 +91,23 @@ class Wall(ComponentBuilder):
         Returns self for chaining.
         """
         self._openings.append({"x": x, "z": z, "width": width, "height": height})
+        return self
+
+    def corner_spline(self, side="left"):
+        """
+        Add a protruding timber spline on a vertical edge of the wall.
+        The spline sits in the core layer and extends past the OSB faces so the
+        adjacent perpendicular wall can slot in.
+
+        side: "left" (X=0 end) or "right" (X=span end)
+        Returns self for chaining.
+
+        Use this instead of raw Part.makeBox when the wall needs to receive
+        a perpendicular wall at its edge. Adds 45mm of spline protrusion.
+        """
+        if side not in ("left", "right"):
+            raise BuildError(f"corner_spline() side must be 'left' or 'right', got '{side}'")
+        self._corner_splines.append(side)
         return self
 
     def _validate(self):
@@ -112,6 +151,14 @@ class Wall(ComponentBuilder):
                                 Vector(o["x"], 0, o["z"]))
             wall = wall.cut(void)
 
+        # Corner splines — protruding timber in core layer at wall edges.
+        # Fused before removeSplitter so OCCT resolves all faces in one pass.
+        for side in self._corner_splines:
+            x = -_GROOVE_WIDTH if side == "left" else self._span
+            spline = Part.makeBox(_GROOVE_WIDTH, core, self._height,
+                                  Vector(x, face, 0))
+            wall = wall.fuse(spline)
+
         return wall.removeSplitter()
 
     def _params(self):
@@ -120,6 +167,7 @@ class Wall(ComponentBuilder):
             "height": self._height,
             "stock": self._stock,
             "openings": list(self._openings),
+            "corner_splines": list(self._corner_splines),
         }
 
 
