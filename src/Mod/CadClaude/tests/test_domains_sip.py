@@ -275,3 +275,53 @@ def test_sip_constants_groove_dimensions():
 def test_sip_constants_invalid_stock_raises():
     with pytest.raises(BuildError):
         sip_constants("SIP-999")
+
+
+# ── Wall — orientation ────────────────────────────────────────────────────────
+
+def test_wall_orient_y_swaps_x_and_y():
+    result = Wall(span=4000, height=2440, stock="SIP-100").orient("Y").build()
+    bb = result.shape.BoundBox
+    assert abs(bb.XLength - 122) < 0.1   # thickness on X
+    assert abs(bb.YLength - 4000) < 0.1  # span on Y
+    assert abs(bb.ZLength - 2440) < 0.1  # height unchanged
+
+
+def test_wall_orient_x_default():
+    result = Wall(span=4000, height=2440, stock="SIP-100").orient("X").build()
+    bb = result.shape.BoundBox
+    assert abs(bb.XLength - 4000) < 0.1
+    assert abs(bb.YLength - 122) < 0.1
+
+
+def test_wall_orient_invalid_raises():
+    with pytest.raises(BuildError):
+        Wall(span=4000, height=2440).orient("Z").build()
+
+
+def test_wall_orient_y_params_captured():
+    result = Wall(span=4000, height=2440, stock="SIP-100").orient("Y").build()
+    assert result.params["orientation"] == "Y"
+
+
+# ── Wall — inner_groove ───────────────────────────────────────────────────────
+
+def test_inner_groove_reduces_volume():
+    plain = Wall(span=4000, height=2440, stock="SIP-100").build()
+    grooved = Wall(span=4000, height=2440, stock="SIP-100").inner_groove(x=500).build()
+    assert grooved.shape.Volume < plain.shape.Volume
+
+
+def test_inner_groove_params_captured():
+    result = Wall(span=4000, height=2440, stock="SIP-100").inner_groove(x=500, width=45, depth=50).build()
+    assert len(result.params["inner_grooves"]) == 1
+    assert result.params["inner_grooves"][0]["x"] == 500
+
+
+def test_inner_groove_multiple():
+    result = (Wall(span=4000, height=2440, stock="SIP-100")
+        .inner_groove(x=61)
+        .inner_groove(x=3939)
+        .build())
+    assert len(result.params["inner_grooves"]) == 2
+    assert result.shape.Volume > 0

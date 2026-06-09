@@ -82,6 +82,8 @@ class Wall(ComponentBuilder):
         self._stock = stock
         self._openings = []
         self._corner_splines = []
+        self._inner_grooves = []
+        self._orientation = "X"  # "X" = span along X (default), "Y" = span along Y
 
     def opening(self, x, z, width, height):
         """
@@ -91,6 +93,35 @@ class Wall(ComponentBuilder):
         Returns self for chaining.
         """
         self._openings.append({"x": x, "z": z, "width": width, "height": height})
+        return self
+
+    def orient(self, axis="Y"):
+        """
+        Rotate the wall so its span runs along a different axis.
+
+        axis="Y": output bounding box is X=thickness, Y=span, Z=height.
+                  Use for east/west walls whose span runs front-to-back.
+        axis="X": default — X=span, Y=thickness, Z=height.
+
+        Returns self for chaining.
+        """
+        if axis not in ("X", "Y"):
+            raise BuildError(f"orient() axis must be 'X' or 'Y', got '{axis}'")
+        self._orientation = axis
+        return self
+
+    def inner_groove(self, x, width=45, depth=50):
+        """
+        Cut a vertical groove into the inner face (Y=0 face) of the wall.
+        Used to receive a spline from a perpendicular intersecting wall.
+
+        x:     distance from left edge of wall to groove centre (mm)
+        width: groove width (default 45mm — standard spline timber width)
+        depth: groove depth into the core (default 50mm)
+
+        Returns self for chaining.
+        """
+        self._inner_grooves.append({"x": x, "width": width, "depth": depth})
         return self
 
     def corner_spline(self, side="left"):
@@ -151,6 +182,13 @@ class Wall(ComponentBuilder):
                                 Vector(o["x"], 0, o["z"]))
             wall = wall.cut(void)
 
+        # Inner face grooves — cut into Y=0 face to receive perpendicular splines
+        for g in self._inner_grooves:
+            gx = g["x"] - g["width"] / 2.0
+            groove = Part.makeBox(g["width"], g["depth"], self._height,
+                                  Vector(gx, 0, 0))
+            wall = wall.cut(groove)
+
         # Corner splines — protruding timber in core layer at wall edges.
         # Fused before removeSplitter so OCCT resolves all faces in one pass.
         for side in self._corner_splines:
@@ -159,15 +197,24 @@ class Wall(ComponentBuilder):
                                   Vector(x, face, 0))
             wall = wall.fuse(spline)
 
-        return wall.removeSplitter()
+        wall = wall.removeSplitter()
+
+        # Orientation — rotate so span runs along Y instead of X
+        if self._orientation == "Y":
+            wall.rotate(Vector(0, 0, 0), Vector(0, 0, 1), -90)
+            wall.translate(Vector(0, self._span, 0))
+
+        return wall
 
     def _params(self):
         return {
             "span": self._span,
             "height": self._height,
             "stock": self._stock,
+            "orientation": self._orientation,
             "openings": list(self._openings),
             "corner_splines": list(self._corner_splines),
+            "inner_grooves": list(self._inner_grooves),
         }
 
 
