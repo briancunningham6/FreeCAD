@@ -70,6 +70,33 @@ For the ElixiCAD worker, files are deployed to:
 /Users/user/freecad-cadclaude/Mod/CadClaude/elixifree/
 ```
 
+### Why no FreeCAD rebuild is needed
+
+ElixiFree is pure Python. It sits entirely above the FreeCAD binary:
+
+```
+FreeCAD binary  (custom build — never touched by ElixiFree changes)
+  └── Python interpreter  (embedded in the binary)
+        └── Part module  (C extension compiled into the binary)
+              └── elixifree/  (plain .py files on disk ← what we edit)
+                    ├── __init__.py
+                    ├── builder.py
+                    └── domains/sip.py
+```
+
+ElixiFree calls standard FreeCAD Part API (`Part.makeBox`, `shape.cut`, etc.) — stable APIs that have been unchanged for years. It never touches the compiled layer beneath them.
+
+**Updating ElixiFree is just a file copy:**
+
+```bash
+cp elixifree/domains/sip.py /path/to/worker/elixifree/domains/sip.py
+rm -rf /path/to/worker/elixifree/__pycache__   # clear stale bytecode
+```
+
+Python reimports the updated `.py` file on the next worker execution. No FreeCAD restart, no compile step, no build toolchain required.
+
+**The one hard constraint:** ElixiFree can only call FreeCAD APIs that already exist in the binary. Adding new geometry operations or fixing OCCT bugs requires a FreeCAD rebuild. Adding new builders, domain modules, or utility functions in ElixiFree never does.
+
 ---
 
 ## Quick Start
