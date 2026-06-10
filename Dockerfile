@@ -1,17 +1,34 @@
 # syntax=docker/dockerfile:1
 #
-# Builds the briancunningham6/FreeCAD fork headless for linux/amd64.
+# Builds the briancunningham6/FreeCAD fork headless.
 # The CadClaude worker module (src/Mod/CadClaude/) is included automatically
 # via the cmake INSTALL rule in src/Mod/CadClaude/CMakeLists.txt.
 #
-# Local build (slow — QEMU on Apple Silicon):
+# Local build:
 #   docker buildx build --platform linux/amd64 -t freecad-cadclaude:amd64 .
+#   docker buildx build --platform linux/arm64 -t freecad-cadclaude:arm64 .
+#
+# For Apple Silicon (M1/M2/M3/M4) Mac / ARM64 Host:
+#
+#   docker buildx build --platform linux/arm64 -t freecad-cadclaude:arm64 --load .
+#
+# For Intel/AMD Processor / AMD64 Host:
+#
+#   docker buildx build --platform linux/amd64 -t freecad-cadclaude:amd64 --load .
+#
+# If no platform is specified, it will automatically build for the host target OS and architecture:
+#   docker build -t freecad-cadclaude .
 #
 # The GitHub Actions workflow (build-docker.yml) builds natively on AMD64 runners.
 
-FROM ubuntu:24.04
+ARG TARGETPLATFORM
+FROM --platform=$TARGETPLATFORM ubuntu:24.04
 
+ARG TARGETPLATFORM
 ARG DEBIAN_FRONTEND=noninteractive
+
+# Print the target platform we are building for
+RUN echo "Building FreeCAD headless image for platform: ${TARGETPLATFORM:-linux/amd64 (default)}"
 
 # Apply CVE patches from the base image, then install headless build deps.
 # Qt6 headers are required by FreeCAD's cmake even for headless builds
@@ -19,7 +36,12 @@ ARG DEBIAN_FRONTEND=noninteractive
 # No Coin3D, GUI workbenches, or full Qt GUI stack.
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     build-essential \
+    ca-certificates \
+    gnupg \
     cmake \
+    curl \
+    wget \
+    htop \
     ninja-build \
     git \
     python3-dev \
@@ -53,6 +75,14 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     libtbb-dev \
     libfreetype-dev \
     libharfbuzz-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 22+ using official NodeSource binary distributions
+RUN mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
