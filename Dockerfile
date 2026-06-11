@@ -21,14 +21,9 @@
 #
 # The GitHub Actions workflow (build-docker.yml) builds natively on AMD64 runners.
 
-ARG TARGETPLATFORM
-FROM --platform=$TARGETPLATFORM ubuntu:24.04
+FROM ubuntu:24.04
 
-ARG TARGETPLATFORM
 ARG DEBIAN_FRONTEND=noninteractive
-
-# Print the target platform we are building for
-RUN echo "Building FreeCAD headless image for platform: ${TARGETPLATFORM:-linux/amd64 (default)}"
 
 # Apply CVE patches from the base image, then install headless build deps.
 # Qt6 headers are required by FreeCAD's cmake even for headless builds
