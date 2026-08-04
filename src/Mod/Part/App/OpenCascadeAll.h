@@ -178,9 +178,12 @@
 #include <BRepGProp_Face.hxx>
 #include <BRepIntCurveSurface_Inter.hxx>
 #include <BRepLProp_CLProps.hxx>
-#if OCC_VERSION_HEX >= 0x080000
+#if OCC_VERSION_HEX >= 0x080000 && !defined(OCC_VERSION_DEVELOPMENT)
 # include <LProp_CurveUtils.hxx>
 #else
+// OCC_VERSION_DEVELOPMENT guard: pre-release 8.0.0 builds (e.g. rc4) do not yet
+// provide LProp_CurveUtils.hxx; fall back to the pre-8.0 header until the final
+// 8.0.0 release (which omits OCC_VERSION_DEVELOPMENT).
 # include <BRepLProp_CurveTool.hxx>
 #endif
 #include <BRepLProp_SLProps.hxx>
@@ -306,9 +309,12 @@
 #include <Geom2dConvert_ApproxCurve.hxx>
 #include <Geom2dConvert_BSplineCurveToBezierCurve.hxx>
 #include <Geom2dConvert_CompCurveToBSplineCurve.hxx>
-#if OCC_VERSION_HEX >= 0x080000
+#if OCC_VERSION_HEX >= 0x080000 && !defined(OCC_VERSION_DEVELOPMENT)
 # include <GeomLProp_CLProps.hxx>
 #else
+// OCC_VERSION_DEVELOPMENT guard: pre-release 8.0.0 builds (e.g. rc4) still name
+// the 2D local-properties class Geom2dLProp_CLProps2d; the unified GeomLProp_CLProps2d
+// name only lands with the final 8.0.0 release (which omits OCC_VERSION_DEVELOPMENT).
 # include <Geom2dLProp_CLProps2d.hxx>
 #endif
 #include <GeomAdaptor_Curve.hxx>

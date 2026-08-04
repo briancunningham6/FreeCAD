@@ -45,9 +45,12 @@
 #include <Geom2dAPI_InterCurveCurve.hxx>
 #include <Geom2dAPI_ProjectPointOnCurve.hxx>
 #include <Geom2dConvert_ApproxCurve.hxx>
-#if OCC_VERSION_HEX >= 0x080000
+#if OCC_VERSION_HEX >= 0x080000 && !defined(OCC_VERSION_DEVELOPMENT)
 # include <GeomLProp_CLProps.hxx>
 #else
+// OCC_VERSION_DEVELOPMENT guard: pre-release 8.0.0 builds (e.g. rc4) still name
+// the 2D local-properties class Geom2dLProp_CLProps2d; the unified GeomLProp_CLProps2d
+// name only lands with the final 8.0.0 release (which omits OCC_VERSION_DEVELOPMENT).
 # include <Geom2dLProp_CLProps2d.hxx>
 #endif
 #include <gp_Dir2d.hxx>
@@ -598,7 +601,7 @@ PyObject* Curve2dPy::tangent(PyObject* args)
                 return nullptr;
             }
             gp_Dir2d dir;
-#if OCC_VERSION_HEX >= 0x080000
+#if OCC_VERSION_HEX >= 0x080000 && !defined(OCC_VERSION_DEVELOPMENT)
             GeomLProp_CLProps2d prop(c, u, 2, Precision::Confusion());
 #else
             Geom2dLProp_CLProps2d prop(c, u, 2, Precision::Confusion());
@@ -630,7 +633,7 @@ PyObject* Curve2dPy::normal(PyObject* args) const
                 return nullptr;
             }
             gp_Dir2d dir;
-#if OCC_VERSION_HEX >= 0x080000
+#if OCC_VERSION_HEX >= 0x080000 && !defined(OCC_VERSION_DEVELOPMENT)
             GeomLProp_CLProps2d prop(c, u, 2, Precision::Confusion());
 #else
             Geom2dLProp_CLProps2d prop(c, u, 2, Precision::Confusion());
@@ -659,7 +662,7 @@ PyObject* Curve2dPy::curvature(PyObject* args) const
             if (!PyArg_ParseTuple(args, "d", &u)) {
                 return nullptr;
             }
-#if OCC_VERSION_HEX >= 0x080000
+#if OCC_VERSION_HEX >= 0x080000 && !defined(OCC_VERSION_DEVELOPMENT)
             GeomLProp_CLProps2d prop(c, u, 2, Precision::Confusion());
 #else
             Geom2dLProp_CLProps2d prop(c, u, 2, Precision::Confusion());
@@ -687,7 +690,7 @@ PyObject* Curve2dPy::centerOfCurvature(PyObject* args) const
             if (!PyArg_ParseTuple(args, "d", &u)) {
                 return nullptr;
             }
-#if OCC_VERSION_HEX >= 0x080000
+#if OCC_VERSION_HEX >= 0x080000 && !defined(OCC_VERSION_DEVELOPMENT)
             GeomLProp_CLProps2d prop(c, u, 2, Precision::Confusion());
 #else
             Geom2dLProp_CLProps2d prop(c, u, 2, Precision::Confusion());
