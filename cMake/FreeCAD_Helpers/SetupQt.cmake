@@ -2,6 +2,11 @@
 
 set(FREECAD_QT_COMPONENTS Core Concurrent Network Xml)
 
+# LinguistTools (qt6_add_translation) is required unconditionally: App/CMakeLists.txt
+# calls qt_find_and_add_translation() regardless of BUILD_GUI (since upstream commit
+# 6a259f948a moved translation setup from Gui into App).
+list (APPEND FREECAD_QT_COMPONENTS LinguistTools)
+
 if (FREECAD_QT_MAJOR_VERSION EQUAL 5)
     message(WARNING [[
 
@@ -27,7 +32,7 @@ if(BUILD_GUI)
         list (APPEND FREECAD_QT_COMPONENTS OpenGLWidgets)
     endif()
 
-    list (APPEND FREECAD_QT_COMPONENTS OpenGL PrintSupport Svg UiTools Widgets LinguistTools)
+    list (APPEND FREECAD_QT_COMPONENTS OpenGL PrintSupport Svg UiTools Widgets)
 
     if(BUILD_DESIGNER_PLUGIN)
         list (APPEND FREECAD_QT_COMPONENTS Designer)
