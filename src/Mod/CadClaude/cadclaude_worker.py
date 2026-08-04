@@ -19,6 +19,7 @@ protocol pipe.
 
 import sys
 import os
+import re
 import traceback
 import io
 
@@ -107,10 +108,63 @@ _ADD_PART_ROBUST = '''\
             if os.path.exists(step_path):'''
 
 
+_ADD_TO_DOC_ATTRIBUTE_ERROR = re.compile(
+    r"AttributeError: '[\w.]+' object has no attribute 'add_to_doc'"
+)
+
+
+def _rewrite_add_to_doc_call(script_source, traceback_text):
+    """
+    Rewrite `<var>.add_to_doc(<args>)` to `add_to_doc(<var>, <args>)` for the
+    exact call that raised the AttributeError, if any.
+
+    `add_to_doc` is a free function in elixifree's flat primitives API (for
+    plain Part.Shape/Part.Compound results), but ComponentBuilder subclasses
+    (BuildResult, ConstructionResult) expose a genuine `.add_to_doc()` method —
+    an LLM generating a script against the flat API can plausibly confuse the
+    two conventions, since both are common in scripts it has seen. We only
+    rewrite after the ORIGINAL call has already failed with exactly this
+    AttributeError, so a working `.add_to_doc()` call on a real builder result
+    is never touched.
+
+    Returns the rewritten source, or None if no matching call/line was found
+    (caller should surface the original error unchanged).
+    """
+    if not _ADD_TO_DOC_ATTRIBUTE_ERROR.search(traceback_text):
+        return None
+
+    # The failing call is always the LAST <cadclaude> frame (the actual call
+    # site) — a script that calls a helper function before crashing would have
+    # an earlier frame too, and only the last one is the add_to_doc() call.
+    line_matches = re.findall(r'File "<cadclaude>", line (\d+)', traceback_text)
+    if not line_matches:
+        return None
+
+    line_no = int(line_matches[-1])
+    lines = script_source.split("\n")
+    if not (1 <= line_no <= len(lines)):
+        return None
+
+    call_match = re.search(r"\b([A-Za-z_][A-Za-z0-9_]*)\.add_to_doc\(", lines[line_no - 1])
+    if not call_match:
+        return None
+
+    var_name = call_match.group(1)
+    rewritten_line = re.sub(
+        rf"\b{re.escape(var_name)}\.add_to_doc\(",
+        f"add_to_doc({var_name}, ",
+        lines[line_no - 1],
+        count=1,
+    )
+    if rewritten_line == lines[line_no - 1]:
+        return None
+
+    lines[line_no - 1] = rewritten_line
+    return "\n".join(lines)
+
+
 def _fix_common_mistakes(script_source):
     """Auto-correct known headless-incompatible patterns before execution."""
-    import re
-
     # ImportGui is GUI-only; replace with Part for STEP export
     script_source = re.sub(r'^import ImportGui\s*$', '', script_source, flags=re.MULTILINE)
     script_source = re.sub(r'ImportGui\.export\(', 'Part.export(', script_source)
@@ -141,14 +195,8 @@ def _fix_common_mistakes(script_source):
     return script_source
 
 
-def _run_script(script_source):
-    """
-    Execute script_source, capturing stdout/stderr.
-    Returns (output, error) where error is None on success.
-    Also closes any FreeCAD documents left open by the script (cleanup
-    after crashes that skip FreeCAD.closeDocument).
-    """
-    script_source = _fix_common_mistakes(script_source)
+def _exec_once(script_source):
+    """Execute script_source once, capturing stdout/stderr. Returns (output, error)."""
     old_stdout = sys.stdout
     old_stderr = sys.stderr
     captured = io.StringIO()
@@ -167,7 +215,11 @@ def _run_script(script_source):
         sys.stdout = old_stdout
         sys.stderr = old_stderr
 
-    # Close any documents left open (e.g. after a crash mid-script)
+    return captured.getvalue(), error
+
+
+def _close_open_documents():
+    """Close any FreeCAD documents left open by a script (e.g. after a crash)."""
     try:
         import FreeCAD
         for name in list(FreeCAD.listDocuments().keys()):
@@ -178,7 +230,33 @@ def _run_script(script_source):
     except Exception:
         pass
 
-    return captured.getvalue(), error
+
+def _run_script(script_source):
+    """
+    Execute script_source, capturing stdout/stderr.
+    Returns (output, error) where error is None on success.
+    Also closes any FreeCAD documents left open by the script (cleanup
+    after crashes that skip FreeCAD.closeDocument).
+
+    If the first attempt fails with the specific mistake of calling
+    `<var>.add_to_doc(...)` on a plain Part.Shape/Part.Compound (elixifree's
+    flat API only exposes `add_to_doc` as a free function; only
+    ComponentBuilder results like BuildResult/ConstructionResult have a real
+    `.add_to_doc()` method), the offending line is rewritten and the script is
+    retried once from scratch. See _rewrite_add_to_doc_call for why this must
+    happen after the failure, not as a source-level pre-pass.
+    """
+    script_source = _fix_common_mistakes(script_source)
+    output, error = _exec_once(script_source)
+
+    if error is not None:
+        rewritten = _rewrite_add_to_doc_call(script_source, error)
+        if rewritten is not None:
+            _close_open_documents()
+            output, error = _exec_once(rewritten)
+
+    _close_open_documents()
+    return output, error
 
 
 def _write(protocol_out, *lines):
@@ -192,8 +270,40 @@ def _write(protocol_out, *lines):
         return False
 
 
+def _configure_elixifree_path(env=None):
+    """
+    Prepend ELIXIFREE_PATH (the launching server's freecad-workspace) to
+    sys.path so `import elixifree` resolves to that checkout rather than
+    whatever globally-installed copy the interpreter would otherwise find.
+    ISSUE-008: a stale editable install shadowed the server's own builders,
+    making skill-promised classes unimportable. Returns the inserted path,
+    or None when the variable is unset or does not hold an elixifree package.
+    """
+    env = os.environ if env is None else env
+    path = env.get("ELIXIFREE_PATH")
+    if path and os.path.isdir(os.path.join(path, "elixifree")):
+        sys.path.insert(0, path)
+        return path
+    return None
+
+
+def _announce_elixifree_source():
+    """Log (stderr, the noise channel) which elixifree the worker will execute."""
+    try:
+        import elixifree
+
+        sys.stderr.write(
+            "cadclaude_worker: elixifree from %s\n" % os.path.dirname(elixifree.__file__)
+        )
+    except Exception as exc:  # noqa: BLE001 — diagnostic only, never fatal
+        sys.stderr.write("cadclaude_worker: elixifree unavailable: %s\n" % exc)
+
+
 def main():
     protocol_out = _redirect_freecad_noise()
+
+    _configure_elixifree_path()
+    _announce_elixifree_source()
 
     # Signal readiness to the Elixir pool manager
     if not _write(protocol_out, "READY\n"):

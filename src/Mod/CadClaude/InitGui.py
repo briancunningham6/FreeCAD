@@ -7,18 +7,28 @@ import FreeCAD
 import FreeCADGui
 
 
+_WORKBENCH_INSTANCE = None
+
+
 class CadClaudeSettingsCommand:
     """Command to open CadClaude settings dialog"""
 
     def GetResources(self):
         return {
             'MenuText': 'Settings...',
-            'ToolTip': 'Configure CadClaude settings',
+            'ToolTip': 'Configure ElixiCAD FreeCAD workspace settings',
         }
 
     def Activated(self):
         from ui.SettingsPanel import show_settings_dialog
-        show_settings_dialog(FreeCADGui.getMainWindow())
+
+        def on_saved():
+            if _WORKBENCH_INSTANCE and _WORKBENCH_INSTANCE.project_browser:
+                _WORKBENCH_INSTANCE.project_browser.apply_settings()
+            if _WORKBENCH_INSTANCE and _WORKBENCH_INSTANCE.chat_panel:
+                _WORKBENCH_INSTANCE.chat_panel._apply_settings_from_config()
+
+        show_settings_dialog(FreeCADGui.getMainWindow(), on_saved=on_saved)
 
     def IsActive(self):
         return True
@@ -31,12 +41,14 @@ FreeCADGui.addCommand('CadClaude_Settings', CadClaudeSettingsCommand())
 class CadClaudeWorkbench(FreeCADGui.Workbench):
     """CadClaude workbench - AI-assisted CAD modeling with Claude"""
 
-    MenuText = "CadClaude"
-    ToolTip = "AI-assisted CAD modeling using Claude and CadQuery"
+    MenuText = "ElixiCAD"
+    ToolTip = "Open and modify ElixiCAD projects in FreeCAD"
 
     PENDING_OPEN_FILE = os.path.expanduser("~/.cadclaude/pending_open_project")
 
     def __init__(self):
+        global _WORKBENCH_INSTANCE
+        _WORKBENCH_INSTANCE = self
         self.chat_panel = None
         self.project_browser = None
         self._workbench_dir = None
@@ -80,8 +92,11 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
         """Called when the workbench is first activated"""
         self._get_workbench_dir()  # Ensure path is set up
 
-        # Create menu
-        self.appendMenu("CadClaude", ["CadClaude_Settings", "CadClaude_Reload"])
+        # Create menu. Developer reload remains registered but is hidden by default.
+        menu_commands = ["CadClaude_Settings"]
+        if os.environ.get("ELIXICAD_FREECAD_DEV_TOOLS") == "1":
+            menu_commands.append("CadClaude_Reload")
+        self.appendMenu("ElixiCAD", menu_commands)
 
         FreeCAD.Console.PrintMessage("CadClaude workbench loaded\n")
 
@@ -174,14 +189,14 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
             try:
                 from shared.Project import Project
             except ImportError:
-                FreeCAD.Console.PrintWarning("CadClaude: Project module not available\n")
+                FreeCAD.Console.PrintWarning("ElixiCAD: project module not available\n")
                 return False
 
         if not Project.is_project(project_path):
-            FreeCAD.Console.PrintWarning(f"CadClaude: pending open path is not a project: {project_path}\n")
+            FreeCAD.Console.PrintWarning(f"ElixiCAD: pending open path is not an ElixiCAD project: {project_path}\n")
             return False
 
-        FreeCAD.Console.PrintMessage(f"CadClaude: opening project from elixicad: {project_path}\n")
+        FreeCAD.Console.PrintMessage(f"ElixiCAD: opening ElixiCAD project: {project_path}\n")
         try:
             project = Project.load(project_path)
             self._current_project = project
@@ -189,10 +204,10 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
                 self.project_browser.set_project(project)
             if self.chat_panel:
                 self.chat_panel.set_current_project(project)
-            FreeCAD.Console.PrintMessage(f"CadClaude: opened project '{project.name}'\n")
+            FreeCAD.Console.PrintMessage(f"ElixiCAD: opened ElixiCAD project '{project.name}'\n")
             return True
         except Exception as e:
-            FreeCAD.Console.PrintWarning(f"CadClaude: failed to open project {project_path}: {e}\n")
+            FreeCAD.Console.PrintWarning(f"ElixiCAD: failed to open ElixiCAD project {project_path}: {e}\n")
             return False
 
     def _save_last_project(self):
@@ -280,11 +295,11 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
                 # Auto-select first body if available
                 if project and project.bodies:
                     first_body = project.bodies[0]
-                    FreeCAD.Console.PrintMessage(f"Project has {len(project.bodies)} bodies, first: {first_body.name}\n")
+                    FreeCAD.Console.PrintMessage(f"Project has {len(project.bodies)} components, first: {first_body.name}\n")
 
                     if workbench.chat_panel:
                         workbench.chat_panel.set_current_body(first_body)
-                        FreeCAD.Console.PrintMessage(f"Auto-selected body: {first_body.name}\n")
+                        FreeCAD.Console.PrintMessage(f"Auto-selected component: {first_body.name}\n")
                     else:
                         FreeCAD.Console.PrintWarning("Chat panel not available for auto-select\n")
                 elif workbench.chat_panel:
@@ -297,9 +312,15 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
             self.chat_panel.saveBodyRequested.connect(self._on_save_body_requested)
             self.chat_panel.updateBodyRequested.connect(self._on_update_body_requested)
             self.chat_panel.bodyCreated.connect(self._on_body_created)
+            self.chat_panel.settingsSaved.connect(self._on_settings_saved)
             # Connect code generation signal if available
             if hasattr(self.chat_panel, 'claude_process') and self.chat_panel.claude_process:
                 self.chat_panel.claude_process.codeGenerated.connect(self._on_code_generated)
+
+    def _on_settings_saved(self):
+        """Apply saved settings to workbench-owned panels."""
+        if self.project_browser:
+            self.project_browser.apply_settings()
 
     def _on_body_created(self):
         """Handle body creation - refresh project browser"""
@@ -310,18 +331,18 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
         """Handle body selection in browser - set as current for editing"""
         if self.chat_panel:
             self.chat_panel.set_current_body(body)
-            FreeCAD.Console.PrintMessage(f"Selected body for editing: {body.name}\n")
+            FreeCAD.Console.PrintMessage(f"Selected component for editing: {body.name}\n")
 
     def _on_regenerate_body(self, body):
         """Handle request to regenerate a body from its description"""
-        FreeCAD.Console.PrintMessage(f"Regenerating body: {body.name}\n")
+        FreeCAD.Console.PrintMessage(f"Regenerating component: {body.name}\n")
         
         if not self.chat_panel:
             FreeCAD.Console.PrintError("Chat panel not available\n")
             return
         
         if not body.description:
-            FreeCAD.Console.PrintError(f"Body '{body.name}' has no description\n")
+            FreeCAD.Console.PrintError(f"Component '{body.name}' has no description\n")
             return
         
         # Send regeneration request to chat panel
@@ -329,7 +350,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
     
     def _on_body_deleted(self, body_name: str):
         """Handle body deletion - clear chatbot context"""
-        FreeCAD.Console.PrintMessage(f"Body '{body_name}' was deleted from project\n")
+        FreeCAD.Console.PrintMessage(f"Component '{body_name}' was deleted from project\n")
 
         # Notify chat panel to clear context
         if self.chat_panel:
@@ -380,27 +401,27 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
             self.chat_panel.claude_process.set_body_context(None)
 
         # Build prompt with ABSOLUTE paths so Claude never guesses wrong locations
-        body_lines = []
+        component_lines = []
         for b in project.bodies:
             if b.has_fcstd:
-                body_lines.append(f"  - {b.name}: {b.fcstd_path}")
+                component_lines.append(f"  - {b.name}: {b.fcstd_path}")
             elif b.has_script:
-                body_lines.append(f"  - {b.name}: (no FCStd yet — skip it)")
-        bodies_detail = "\n".join(body_lines) if body_lines else "  (no bodies with FCStd files)"
+                component_lines.append(f"  - {b.name}: (no FCStd yet — skip it)")
+        components_detail = "\n".join(component_lines) if component_lines else "  (no components with FCStd files)"
 
         assembly_prompt = (
-            f"Create an assembly document that combines these FreeCAD bodies. "
-            f"Use these EXACT absolute FCStd file paths:\n{bodies_detail}\n\n"
+            f"Create an assembly document that combines these FreeCAD components. "
+            f"Use these EXACT absolute FCStd file paths:\n{components_detail}\n\n"
             f"IMPORTANT: Use this pattern — do NOT use App::Link:\n"
             f"1. Create doc with FreeCAD.newDocument('assembly')\n"
-            f"2. For each body: load it with FreeCAD.openDocument(path), copy its shapes into the assembly doc using Part::Feature, then close the body doc\n"
+            f"2. For each component: load it with FreeCAD.openDocument(path), copy its shapes into the assembly doc using Part::Feature, then close the component doc\n"
             f"3. Position each shape with shape.translate(Vector(x, y, z)) before assigning to feature.Shape\n"
             f"4. Call doc.recompute() and fitAll() at the end\n"
             f"Arrange them sensibly (e.g. ball centered in front of goal, resting on ground)."
         )
         self.chat_panel.input_field.setPlainText(assembly_prompt)
         self.chat_panel._on_send_clicked()
-        FreeCAD.Console.PrintMessage(f"Assembly prompt sent for {len(project.bodies)} bodies\n")
+        FreeCAD.Console.PrintMessage(f"Assembly prompt sent for {len(project.bodies)} components\n")
 
     def _on_assemble_sub_bodies(self, body):
         """Assemble sub-bodies of a single body into a finished assembly document"""
@@ -418,7 +439,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
         ])
 
         if not sub_fcstds:
-            FreeCAD.Console.PrintError(f"No sub-body FCStd files found in {body.path}\n")
+            FreeCAD.Console.PrintError(f"No split component FCStd files found in {body.path}\n")
             return
 
         # Read placements.json if it exists to inform positioning
@@ -427,7 +448,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
         if os.path.exists(placements_path):
             try:
                 with open(placements_path, 'r') as f:
-                    placements_content = f"\nPlacements (world-space positions for each sub-body):\n```json\n{f.read()}\n```\n"
+                    placements_content = f"\nPlacements (world-space positions for each split component):\n```json\n{f.read()}\n```\n"
             except Exception:
                 pass
 
@@ -447,12 +468,12 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
         scripts_section = ""
         if scripts_content:
             scripts_section = (
-                "\nSub-body scripts (use these to understand each part's geometry, "
+                "\nSplit component scripts (use these to understand each part's geometry, "
                 "dimensions, and natural orientation before placing it):\n"
                 + "\n\n".join(scripts_content) + "\n"
             )
 
-        # Build list of sub-body files
+        # Build list of split component files
         sub_bodies_list = "\n".join([f"  - {os.path.basename(f)}: {f}" for f in sub_fcstds])
 
         # Determine assembly output path
@@ -472,9 +493,9 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
             self.chat_panel.claude_process.set_body_context(None)
 
         prompt = (
-            f"Create an assembly document that combines these sub-bodies of '{body.name}' "
+            f"Create an assembly document that combines these split components of '{body.name}' "
             f"into a single finished assembly showing all parts in their correct positions.\n\n"
-            f"Sub-body FCStd files:\n{sub_bodies_list}\n"
+            f"Split component FCStd files:\n{sub_bodies_list}\n"
             f"{placements_content}"
             f"{scripts_section}\n"
             f"IMPORTANT - Placement and rotation:\n"
@@ -482,17 +503,17 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
             f"- The rotation in placements.json is [axis_x, axis_y, axis_z, angle_deg]\n"
             f"- WARNING: placements.json may have incorrect or missing rotations (angle=0) "
             f"even when a part needs to be rotated. Do NOT blindly trust zero-angle rotations.\n"
-            f"- Instead, reason from the sub-body scripts and the target position:\n"
+            f"- Instead, reason from the split component scripts and the target position:\n"
             f"  * Check each part's script to understand its natural geometry (which axis it extends along, its bounding dimensions)\n"
             f"  * Use the world-space position to infer the part's role (e.g. a wall at a high X position is likely a side wall that needs rotation)\n"
             f"  * If a part's natural long axis does not match the direction it needs to run in the assembly, add the appropriate rotation\n\n"
             f"Use this exact pattern (do NOT use App::Link):\n"
             f"1. Create doc with FreeCAD.newDocument('{body.name}_assembly')\n"
             f"2. os.makedirs('{assembly_dir}', exist_ok=True)\n"
-            f"3. For each sub-body:\n"
+            f"3. For each split component:\n"
             f"   a. Load with FreeCAD.openDocument(path)\n"
             f"   b. Get shape: shape = [o.Shape for o in part_doc.Objects if hasattr(o,'Shape')][-1].copy()\n"
-            f"   c. Close sub-body doc\n"
+            f"   c. Close split component doc\n"
             f"   d. Apply placement: shape.Placement = FreeCAD.Placement(Vector(x,y,z), Rotation(axis, angle_deg))\n"
             f"   e. feature = doc.addObject('Part::Feature', name); feature.Shape = shape\n"
             f"4. doc.recompute()\n"
@@ -503,7 +524,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
 
         self.chat_panel.input_field.setPlainText(prompt)
         self.chat_panel._on_send_clicked()
-        FreeCAD.Console.PrintMessage(f"Sub-body assembly prompt sent for '{body.name}'\n")
+        FreeCAD.Console.PrintMessage(f"Split component assembly prompt sent for '{body.name}'\n")
 
     def _on_disaggregate_body(self, body):
         """Send a disaggregation prompt to Claude to split a body into sub-component scripts"""
@@ -512,7 +533,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
             return
 
         if not body.has_script:
-            FreeCAD.Console.PrintError(f"Body '{body.name}' has no script to disaggregate\n")
+            FreeCAD.Console.PrintError(f"Component '{body.name}' has no script to split\n")
             return
 
         try:
@@ -535,8 +556,8 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
         output_dir = body.path  # e.g. .../bodies/goal/
 
         disaggregate_prompt = (
-            f"Disaggregate this FreeCAD body script into individually manufacturable sub-components.\n\n"
-            f"Body name: {body.name}\n"
+            f"Split this FreeCAD component script into individually manufacturable sub-components.\n\n"
+            f"Component name: {body.name}\n"
             f"Output directory: {output_dir}\n\n"
             f"Current script:\n```python\n{script_content}\n```\n\n"
             f"Generate a single Python script that:\n"
@@ -545,7 +566,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
             f"   a. Build the geometry at its NATURAL ORIGIN — e.g. a vertical post starts at Vector(0,0,0), "
             f"a horizontal bar starts at Vector(0,0,0) pointing along X. "
             f"This means each piece is clean for manufacturing/drawing.\n"
-            f"   b. Record the world-space placement it occupies in the original body as a Vector (x, y, z) offset.\n"
+            f"   b. Record the world-space placement it occupies in the original component as a Vector (x, y, z) offset.\n"
             f"   c. Create a new FreeCAD document, add the origin-based shape, save and close:\n"
             f"      doc = FreeCAD.newDocument('subname')\n"
             f"      feature = doc.addObject('Part::Feature', 'subname')\n"
@@ -574,7 +595,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
 
         self.chat_panel.input_field.setPlainText(disaggregate_prompt)
         self.chat_panel._on_send_clicked()
-        FreeCAD.Console.PrintMessage(f"Disaggregation prompt sent for body '{body.name}'\n")
+        FreeCAD.Console.PrintMessage(f"Split component prompt sent for '{body.name}'\n")
 
     def _on_prepare_assembly(self, body, method: str, bolt_size=None):
         """Send assembly preparation prompt to Claude with sub-body FCStd files and placements"""
@@ -592,10 +613,10 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
         ])
 
         if not sub_fcstds:
-            FreeCAD.Console.PrintError(f"No sub-body FCStd files found in {body.path}\n")
+            FreeCAD.Console.PrintError(f"No split component FCStd files found in {body.path}\n")
             return
 
-        # Build list of sub-body files
+        # Build list of split component files
         sub_bodies_list = "\n".join([f"  - {os.path.basename(f)}: {f}" for f in sub_fcstds])
 
         # Read placements.json if it exists
@@ -662,15 +683,15 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
             method_instructions = "Apply appropriate joining modifications based on the geometry."
 
         prompt = (
-            f"Prepare these sub-bodies for {method}ed assembly.\n\n"
-            f"Parent body: {body.name}\n"
+            f"Prepare these split components for {method}ed assembly.\n\n"
+            f"Parent component: {body.name}\n"
             f"Output directory: {body.path}\n"
             f"{placements_content}"
             f"{connections_content}\n"
-            f"Sub-body FCStd files:\n{sub_bodies_list}\n\n"
+            f"Split component FCStd files:\n{sub_bodies_list}\n\n"
             f"{method_instructions}\n\n"
             f"Generate a single Python script that:\n"
-            f"1. Opens each sub-body FCStd file using FreeCAD.openDocument(path)\n"
+            f"1. Opens each split component FCStd file using FreeCAD.openDocument(path)\n"
             f"2. Gets the shape from the document's objects\n"
             f"3. Uses the detected connections (if provided) to determine exactly WHERE to apply modifications\n"
             f"4. Applies the joining modifications based on connection geometry\n"
@@ -701,7 +722,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
         ])
 
         if not sub_fcstds:
-            FreeCAD.Console.PrintError(f"No sub-body FCStd files found in {body.path}\n")
+            FreeCAD.Console.PrintError(f"No split component FCStd files found in {body.path}\n")
             return
 
         # Build list of sub-body files
@@ -730,13 +751,13 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
         output_path = os.path.join(body.path, "connections.json")
 
         prompt = (
-            f"Detect connections between these sub-bodies and generate a connections.json file.\n\n"
-            f"Parent body: {body.name}\n"
+            f"Detect connections between these split components and generate a connections.json file.\n\n"
+            f"Parent component: {body.name}\n"
             f"Output file: {output_path}\n"
             f"{placements_content}\n"
-            f"Sub-body FCStd files:\n{sub_bodies_list}\n\n"
+            f"Split component FCStd files:\n{sub_bodies_list}\n\n"
             f"Generate a Python script that:\n"
-            f"1. Opens each sub-body FCStd file\n"
+            f"1. Opens each split component FCStd file\n"
             f"2. Applies the placement transforms from placements.json\n"
             f"3. For each pair of parts, uses shape_a.distToShape(shape_b) to check if they touch (distance < 1mm)\n"
             f"4. For touching parts, determines:\n"
@@ -771,10 +792,10 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
 
     def _on_run_body(self, body):
         """Handle request to run a body's script"""
-        FreeCAD.Console.PrintMessage(f"Running body: {body.name}\n")
+        FreeCAD.Console.PrintMessage(f"Running component: {body.name}\n")
 
         if not body.has_script:
-            FreeCAD.Console.PrintError(f"Body {body.name} has no script\n")
+            FreeCAD.Console.PrintError(f"Component {body.name} has no script\n")
             return
 
         # Read the script to determine if it's FreeCAD or CadQuery code
@@ -797,7 +818,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
             
             if result.success:
                 body.mark_generated()
-                FreeCAD.Console.PrintMessage(f"Body {body.name} executed successfully\n")
+                FreeCAD.Console.PrintMessage(f"Component {body.name} executed successfully\n")
                 # Refresh browser
                 if self.project_browser:
                     self.project_browser._refresh_tree()
@@ -806,7 +827,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
                     self._on_view_file(result.document_path)
             else:
                 body.mark_error(result.error)
-                FreeCAD.Console.PrintError(f"Body {body.name} failed: {result.error}\n")
+                FreeCAD.Console.PrintError(f"Component {body.name} failed: {result.error}\n")
         else:
             # Use ScriptRunner for CadQuery code (runs in subprocess with separate Python)
             from core.CodeExecutor import ScriptRunner
@@ -814,7 +835,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
             result = runner.run_body(body)
 
             if result.success:
-                FreeCAD.Console.PrintMessage(f"Body {body.name} executed successfully\n")
+                FreeCAD.Console.PrintMessage(f"Component {body.name} executed successfully\n")
                 # Refresh browser to show updated status
                 if self.project_browser:
                     self.project_browser._refresh_tree()
@@ -822,7 +843,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
                 if result.generated_files:
                     self._on_view_file(result.generated_files[0])
             else:
-                FreeCAD.Console.PrintError(f"Body {body.name} failed: {result.error}\n")
+                FreeCAD.Console.PrintError(f"Component {body.name} failed: {result.error}\n")
 
     def _on_run_script(self, script_path):
         """Handle request to run a Python script file"""
@@ -892,7 +913,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
         so we only need to save the script - no need to re-execute.
         """
         if not self.chat_panel or not self.chat_panel._current_body:
-            FreeCAD.Console.PrintError("No current body to update\n")
+            FreeCAD.Console.PrintError("No current component to update\n")
             return
 
         body = self.chat_panel._current_body
@@ -907,7 +928,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
             )
             body.set_script_content(prepared_code)
 
-            FreeCAD.Console.PrintMessage(f"Updated body script: {body.name}\n")
+            FreeCAD.Console.PrintMessage(f"Updated component script: {body.name}\n")
 
             # Update Claude's context with the new code
             if self.chat_panel.claude_process:
@@ -921,7 +942,7 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
             # The _on_run_body call was causing double-execution
 
         except Exception as e:
-            FreeCAD.Console.PrintError(f"Failed to update body: {e}\n")
+            FreeCAD.Console.PrintError(f"Failed to update component: {e}\n")
 
     def _on_save_body_requested(self, code: str, name: str):
         """Handle request to save code as a body"""
@@ -975,19 +996,19 @@ class CadClaudeWorkbench(FreeCADGui.Workbench):
                 # Explicitly set Claude context with the prepared code
                 if self.chat_panel.claude_process:
                     self.chat_panel.claude_process.set_body_context(prepared_code, name)
-                    FreeCAD.Console.PrintMessage(f"Set Claude context for body: {name}\n")
+                    FreeCAD.Console.PrintMessage(f"Set Claude context for component: {name}\n")
 
             # Refresh browser
             if self.project_browser:
                 self.project_browser._refresh_tree()
 
-            FreeCAD.Console.PrintMessage(f"Created body: {name}\n")
+            FreeCAD.Console.PrintMessage(f"Created component: {name}\n")
 
             # Run the body
             self._on_run_body(body)
 
         except Exception as e:
-            FreeCAD.Console.PrintError(f"Failed to create body: {e}\n")
+            FreeCAD.Console.PrintError(f"Failed to create component: {e}\n")
 
     def _hide_panels(self):
         """Hide UI panels when workbench is deactivated"""
@@ -1075,11 +1096,11 @@ def _check_pending_open_at_startup():
     if not os.path.exists(pending):
         return
 
-    FreeCAD.Console.PrintMessage("CadClaude: pending open detected — activating workbench\n")
+    FreeCAD.Console.PrintMessage("ElixiCAD: pending open detected — activating workbench\n")
     try:
         FreeCADGui.activateWorkbench("CadClaudeWorkbench")
     except Exception as e:
-        FreeCAD.Console.PrintWarning(f"CadClaude: could not activate workbench at startup: {e}\n")
+        FreeCAD.Console.PrintWarning(f"ElixiCAD: could not activate workbench at startup: {e}\n")
 
 
 try:
