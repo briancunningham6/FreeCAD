@@ -1,11 +1,23 @@
 # syntax=docker/dockerfile:1
 #
-# Builds the briancunningham6/FreeCAD fork headless for linux/amd64.
+# Builds the briancunningham6/FreeCAD fork headless.
 # The CadClaude worker module (src/Mod/CadClaude/) is included automatically
 # via the cmake INSTALL rule in src/Mod/CadClaude/CMakeLists.txt.
 #
-# Local build (slow — QEMU on Apple Silicon):
+# Local build:
 #   docker buildx build --platform linux/amd64 -t freecad-cadclaude:amd64 .
+#   docker buildx build --platform linux/arm64 -t freecad-cadclaude:arm64 .
+#
+# For Apple Silicon (M1/M2/M3/M4) Mac / ARM64 Host:
+#
+#   docker buildx build --platform linux/arm64 -t freecad-cadclaude:arm64 --load .
+#
+# For Intel/AMD Processor / AMD64 Host:
+#
+#   docker buildx build --platform linux/amd64 -t freecad-cadclaude:amd64 --load .
+#
+# If no platform is specified, it will automatically build for the host target OS and architecture:
+#   docker build -t freecad-cadclaude .
 #
 # The GitHub Actions workflow (build-docker.yml) builds natively on AMD64 runners.
 
@@ -19,7 +31,12 @@ ARG DEBIAN_FRONTEND=noninteractive
 # No Coin3D, GUI workbenches, or full Qt GUI stack.
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     build-essential \
+    ca-certificates \
+    gnupg \
     cmake \
+    curl \
+    wget \
+    htop \
     ninja-build \
     git \
     python3-dev \
@@ -53,6 +70,14 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     libtbb-dev \
     libfreetype-dev \
     libharfbuzz-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 22+ using official NodeSource binary distributions
+RUN mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
@@ -110,20 +135,21 @@ RUN cmake --install /build
 # ── FEM runtime dependencies ─────────────────────────────────────────────────
 # CalculiX: FEM solver invoked as `ccx` subprocess by the FEM analysis script.
 # python3-pip + system OpenGL: needed for gmsh and pyvista render dependencies.
+# python3-gmsh and python3-vtk9: installed via system package manager as arm64 wheels
+# for gmsh and vtk (version < 9.4) are not officially provided on PyPI.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     calculix-ccx \
     python3-pip \
+    python3-gmsh \
+    python3-vtk9 \
     libgl1 \
     libglu1-mesa \
     libegl1 \
     && rm -rf /var/lib/apt/lists/*
 
-# gmsh: mesh generation, runs inside the FreeCAD worker (system Python 3.12)
-# pyvista + vtk: FEM result rendering, runs as a separate RENDER_PYTHON_PATH subprocess
-# vtk pinned <9.4 — 9.5+ has offscreen rendering regressions on some platforms
+# gmsh + vtk: installed above via apt to support all platforms including arm64
+# pyvista + numpy: FEM result rendering dependencies
 RUN python3 -m pip install --no-cache-dir --break-system-packages \
-    gmsh \
-    "vtk>=9.3,<9.4" \
     "pyvista>=0.43,<0.44" \
     numpy
 
