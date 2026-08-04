@@ -32,6 +32,7 @@
 #include <BRepAdaptor_Curve.hxx>
 #include <BRepBndLib.hxx>
 #include <BRepGProp.hxx>
+#include <BRepLib.hxx>
 #include <BRepLib_FuseEdges.hxx>
 #include <BRepLib_MakeWire.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
@@ -62,11 +63,11 @@
 #include <TopoDS_Shape.hxx>
 #include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
+#include <TopTools_ListOfShape.hxx>
+#include <TopTools_IndexedMapOfShape.hxx>
+#include <TopTools_DataMapOfShapeShape.hxx>
 #include <TopTools_DataMapOfIntegerListOfShape.hxx>
 #include <TopTools_DataMapOfIntegerShape.hxx>
-#include <TopTools_DataMapOfShapeShape.hxx>
-#include <TopTools_IndexedMapOfShape.hxx>
-#include <TopTools_ListOfShape.hxx>
 
 #include <Base/Console.h>
 
@@ -235,9 +236,11 @@ void FaceAdjacencySplitter::recursiveFind(const TopoDS_Face& face, FaceVectorTyp
     outVector.push_back(face);
 
     const TopTools_ListOfShape& edges = faceToEdgeMap.FindFromKey(face);
-    for (TopTools_ListOfShape::Iterator edgeIt(edges); edgeIt.More(); edgeIt.Next()) {
+    TopTools_ListIteratorOfListOfShape edgeIt;
+    for (edgeIt.Initialize(edges); edgeIt.More(); edgeIt.Next()) {
         const TopTools_ListOfShape& faces = edgeToFaceMap.FindFromKey(edgeIt.Value());
-        for (TopTools_ListOfShape::Iterator faceIt(faces); faceIt.More(); faceIt.Next()) {
+        TopTools_ListIteratorOfListOfShape faceIt;
+        for (faceIt.Initialize(faces); faceIt.More(); faceIt.Next()) {
             if (!facesInMap.Contains(faceIt.Value())) {
                 continue;
             }
@@ -507,11 +510,13 @@ const TopoDS_Face fixFace(const TopoDS_Face& f)
         return dummy;
     }
     faceFixer.FixMissingSeam();
+    faceFixer.SetContext(new ShapeBuild_ReShape());
     faceFixer.Perform();
     if (faceFixer.Status(ShapeExtend_FAIL)) {
         return dummy;
     }
     faceFixer.FixOrientation();
+    faceFixer.SetContext(new ShapeBuild_ReShape());
     faceFixer.Perform();
     if (faceFixer.Status(ShapeExtend_FAIL)) {
         return dummy;
@@ -566,7 +571,15 @@ bool wireEncirclesAxis(const TopoDS_Wire& wire, const Handle(Geom_CylindricalSur
         else {
             // Linearize the edge. Idea taken from ShapeAnalysis.cxx ShapeAnalysis::TotCross2D()
             TColgp_SequenceOfPnt SeqPnt;
-            ShapeAnalysis_Curve::GetSamplePoints(adapt.Curve().Curve(), fp, lp, SeqPnt);
+            // If the edge has no 3d curve try to create it
+            if (adapt.IsCurveOnSurface()) {
+                if (BRepLib::BuildCurves3d(segment)) {
+                    adapt.Initialize(segment);
+                }
+            }
+            if (adapt.Is3DCurve()) {
+                ShapeAnalysis_Curve::GetSamplePoints(adapt.Curve().Curve(), fp, lp, SeqPnt);
+            }
 
             // Calculate the oriented length of the edge
             gp_Pnt begin;
@@ -1192,18 +1205,45 @@ bool FaceUniter::process()
                 sew.Add(*sewIt);
             }
             sew.Perform();
+
+            // update the list of modifications
+            for (auto& it : modifiedShapes) {
+                if (sew.IsModified(it.second)) {
+                    it.second = sew.Modified(it.second);
+
+                    // TODO: uncomment in the V2 algorithm PR
+                    // if (App::getSelectedHistoryAlgorithm() == App::HistoryAlgorithm::V1) {
+                    break;
+                    // }
+                }
+            }
+
+            TopExp_Explorer workShellExplorer;
+            std::vector<TopAbs_ShapeEnum> types = {TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX};
+
+            // track any modifications created by the reShape operation in the sewer
+            for (TopAbs_ShapeEnum& type : types) {
+                workShellExplorer.Init(workShell, type);
+
+                for (; workShellExplorer.More(); workShellExplorer.Next()) {
+                    const TopoDS_Shape& workShellSubShape = workShellExplorer.Value();
+
+                    if (sew.IsModifiedSubShape(workShellSubShape)) {
+                        // we add a modified shape entry even if `workShellSubShape` is already
+                        // present as a key for extra info to give the topological naming method.
+                        modifiedShapes.emplace_back(
+                            workShellSubShape,
+                            sew.ModifiedSubShape(workShellSubShape)
+                        );
+                    }
+                }
+            }
+
             try {
                 workShell = TopoDS::Shell(sew.SewedShape());
             }
             catch (Standard_Failure&) {
                 return false;
-            }
-            // update the list of modifications
-            for (auto& it : modifiedShapes) {
-                if (sew.IsModified(it.second)) {
-                    it.second = sew.Modified(it.second);
-                    break;
-                }
             }
         }
         else {
@@ -1225,8 +1265,8 @@ bool FaceUniter::process()
 #endif
         TopTools_DataMapOfShapeShape affectedFaces;
         edgeFuse.Faces(affectedFaces);
-        TopTools_DataMapOfShapeShape::Iterator mapIt(affectedFaces);
-        for (; mapIt.More(); mapIt.Next()) {
+        TopTools_DataMapIteratorOfDataMapOfShapeShape mapIt;
+        for (mapIt.Initialize(affectedFaces); mapIt.More(); mapIt.Next()) {
             ShapeFix_Face faceFixer(TopoDS::Face(mapIt.Value()));
             faceFixer.Perform();
         }
@@ -1249,15 +1289,15 @@ bool FaceUniter::process()
         TopTools_DataMapOfShapeShape faceMap;
         edgeFuse.Faces(faceMap);
         for (mapIt.Initialize(faceMap); mapIt.More(); mapIt.Next()) {
-            bool isModifiedFace = false;
+            bool isModifiedShape = false;
             for (auto& it : modifiedShapes) {
                 if (mapIt.Key().IsSame(it.second)) {
                     // Note: IsEqual() for some reason does not work
                     it.second = mapIt.Value();
-                    isModifiedFace = true;
+                    isModifiedShape = true;
                 }
             }
-            if (!isModifiedFace) {
+            if (!isModifiedShape) {
                 // Catch faces that were not united but whose boundary was changed (probably because
                 // several adjacent faces were united)
                 // See https://sourceforge.net/apps/mantisbt/free-cad/view.php?id=873
@@ -1270,11 +1310,12 @@ bool FaceUniter::process()
         TopTools_DataMapOfIntegerShape newEdges;
         edgeFuse.Edges(oldEdges);
         edgeFuse.ResultEdges(newEdges);
-        TopTools_DataMapOfIntegerListOfShape::Iterator edgeMapIt(oldEdges);
-        for (; edgeMapIt.More(); edgeMapIt.Next()) {
+        TopTools_DataMapIteratorOfDataMapOfIntegerListOfShape edgeMapIt;
+        for (edgeMapIt.Initialize(oldEdges); edgeMapIt.More(); edgeMapIt.Next()) {
             const TopTools_ListOfShape& edges = edgeMapIt.Value();
             int idx = edgeMapIt.Key();
-            for (TopTools_ListOfShape::Iterator edgeIt(edges); edgeIt.More(); edgeIt.Next()) {
+            TopTools_ListIteratorOfListOfShape edgeIt;
+            for (edgeIt.Initialize(edges); edgeIt.More(); edgeIt.Next()) {
                 if (newEdges.IsBound(idx)) {
                     modifiedShapes.emplace_back(edgeIt.Value(), newEdges(idx));
                 }
@@ -1439,7 +1480,8 @@ const TopTools_ListOfShape& Part::BRepBuilderAPI_RefineModel::Modified(const Top
 
 Standard_Boolean Part::BRepBuilderAPI_RefineModel::IsDeleted(const TopoDS_Shape& S)
 {
-    for (TopTools_ListOfShape::Iterator it(myDeleted); it.More(); it.Next()) {
+    TopTools_ListIteratorOfListOfShape it;
+    for (it.Initialize(myDeleted); it.More(); it.Next()) {
         if (it.Value().IsSame(S)) {
             return Standard_True;
         }

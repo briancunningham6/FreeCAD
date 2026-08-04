@@ -23,6 +23,8 @@
  ***************************************************************************/
 
 #include <Approx_Curve3d.hxx>
+#include <Bnd_Box.hxx>
+#include <BRepBndLib.hxx>
 #include <BRepAdaptor_Curve.hxx>
 #include <BRepAdaptor_Surface.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
@@ -42,6 +44,9 @@
 #include <GC_MakeSegment.hxx>
 #include <GCE2d_MakeSegment.hxx>
 #include <GCPnts_AbscissaPoint.hxx>
+#include <TColStd_Array1OfInteger.hxx>
+#include <TColgp_Array1OfPnt2d.hxx>
+#include <TColgp_Array1OfVec.hxx>
 #include <gce_ErrorType.hxx>
 #include <gce_MakeParab.hxx>
 #include <Geom_BezierCurve.hxx>
@@ -268,6 +273,26 @@ bool Geometry::hasSameExtensions(const Geometry& other) const
         }
     }
     return true;
+}
+
+Base::BoundBox3d Geometry::getBoundBox() const
+{
+    TopoDS_Shape shape = toShape();
+    if (shape.IsNull()) {
+        return Base::BoundBox3d();
+    }
+
+    Bnd_Box box;
+    BRepBndLib::Add(shape, box);
+
+    if (box.IsVoid()) {
+        return Base::BoundBox3d();
+    }
+
+    Standard_Real xmin, ymin, zmin, xmax, ymax, zmax;
+    box.Get(xmin, ymin, zmin, xmax, ymax, zmax);
+
+    return Base::BoundBox3d(xmin, ymin, zmin, xmax, ymax, zmax);
 }
 
 // Persistence implementer

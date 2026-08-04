@@ -24,6 +24,7 @@
 
 #include <FCConfig.h>
 
+#include <TopoDS_Shape.hxx>
 #include <array>
 #include <cmath>
 #include <cstdlib>
@@ -56,8 +57,8 @@
 #include <BRepBuilderAPI_Sewing.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 #include <BRepCheck_Analyzer.hxx>
-#include <BRepClass_FaceClassifier.hxx>
 #include <BRepCheck_ListOfStatus.hxx>
+#include <BRepClass_FaceClassifier.hxx>
 #include <BRepCheck_Result.hxx>
 #include <BRepFill_CompatibleWires.hxx>
 #include <BRepGProp.hxx>
@@ -139,11 +140,10 @@
 #include <TopoDS_Vertex.hxx>
 #include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
-#include <TColgp_Array1OfPnt.hxx>
 #include <TopTools_HSequenceOfShape.hxx>
-#include <TopTools_ListOfShape.hxx>
 #include <Transfer_FinderProcess.hxx>
 #include <Transfer_TransientProcess.hxx>
+#include <TColgp_Array1OfPnt.hxx>
 #include <XSControl_TransferWriter.hxx>
 #include <XSControl_WorkSession.hxx>
 
@@ -169,19 +169,22 @@
 #include <Base/Exception.h>
 #include <Base/Placement.h>
 #include <Base/Tools.h>
+#include <Base/Vector3D.h>
 #include <Base/Reader.h>
 #include <Base/Writer.h>
 
-#include "TopoShape.h"
 #include "BRepMesh.h"
 #include "BRepOffsetAPI_MakeOffsetFix.h"
 #include "CrossSection.h"
 #include "encodeFilename.h"
 #include "FaceMakerBullseye.h"
 #include "Interface.h"
+#include "WireJoiner.h"
 #include "modelRefine.h"
 #include "PartPyCXX.h"
+#include "ProgressIndicator.h"
 #include "Tools.h"
+#include "TopoShape.h"
 #include "TopoShapeCompoundPy.h"
 #include "TopoShapeCompSolidPy.h"
 #include "TopoShapeEdgePy.h"
@@ -190,7 +193,6 @@
 #include "TopoShapeSolidPy.h"
 #include "TopoShapeVertexPy.h"
 #include "TopoShapeWirePy.h"
-#include "OCCTProgressIndicator.h"
 
 FC_LOG_LEVEL_INIT("TopoShape", true, true)
 
@@ -543,7 +545,8 @@ const std::string& TopoShape::shapeName(bool silent) const
 
 PyObject* TopoShape::getPySubShape(const char* Type, bool silent) const
 {
-    return Py::new_reference_to(shape2pyshape(getSubShape(Type, silent)));
+    TopoShape s(*this);
+    return Py::new_reference_to(shape2pyshape(s.getSubTopoShape(Type, silent)));
 }
 
 PyObject* TopoShape::getPyObject()
@@ -898,7 +901,16 @@ void TopoShape::exportStep(const char* filename) const
 
         // write step file
         STEPControl_Writer aWriter;
-
+#if OCC_VERSION_HEX >= 0x070900
+        // Temporary workaround for OCCT 7.9+, see:
+        // https://github.com/Open-Cascade-SAS/OCCT/issues/1327
+        // TODO: Remove or refine the guards or remove when the issue is fixed in OCCT 8.0.1
+        aWriter.SetShapeFixParameters(DESTEP_Parameters::GetDefaultShapeFixParameters());
+        ShapeProcess::OperationsFlags aFlags;
+        aFlags.set(ShapeProcess::Operation::SplitCommonVertex);
+        aFlags.set(ShapeProcess::Operation::DirectFaces);
+        aWriter.SetShapeProcessFlags(aFlags);
+#endif
         const Handle(XSControl_TransferWriter) & hTransferWriter = aWriter.WS()->TransferWriter();
         Handle(Transfer_FinderProcess) hFinder = hTransferWriter->FinderProcess();
 
@@ -1532,9 +1544,9 @@ bool TopoShape::analyze(bool runBopCheck, std::ostream& str) const
                     }
                     const BRepCheck_ListOfStatus& status = result->StatusOnShape(shape);
 
-                    BRepCheck_ListOfStatus::Iterator it(status);
+                    BRepCheck_ListIteratorOfListOfStatus it(status);
                     while (it.More()) {
-                        const BRepCheck_Status& val = it.Value();
+                        BRepCheck_Status& val = it.Value();
                         switch (val) {
                             case BRepCheck_NoError:
                                 str << "No error" << std::endl;
@@ -1681,9 +1693,8 @@ bool TopoShape::analyze(bool runBopCheck, std::ostream& str) const
                 const BOPAlgo_CheckResult& current = BOPResultsIt.Value();
 
                 const TopTools_ListOfShape& faultyShapes1 = current.GetFaultyShapes1();
-                for (TopTools_ListOfShape::Iterator faultyShapes1It(faultyShapes1);
-                     faultyShapes1It.More();
-                     faultyShapes1It.Next()) {
+                TopTools_ListIteratorOfListOfShape faultyShapes1It(faultyShapes1);
+                for (; faultyShapes1It.More(); faultyShapes1It.Next()) {
                     const TopoDS_Shape& faultyShape = faultyShapes1It.Value();
                     str << "Error in " << shapeEnumToString[faultyShape.ShapeType()] << ": ";
                     str << bopEnumToString[current.GetCheckStatus()] << std::endl;
@@ -1781,7 +1792,7 @@ TopoDS_Shape TopoShape::cut(const std::vector<TopoDS_Shape>& shapes, Standard_Re
         mkCut.setAutoFuzzy();
     }
 #if OCC_VERSION_HEX >= 0x070600
-    mkCut.Build(OCCTProgressIndicator::getAppIndicator().Start());
+    mkCut.Build(std::make_unique<Part::ProgressIndicator>()->Start());
 #else
     mkCut.Build();
 #endif
@@ -1830,7 +1841,7 @@ TopoDS_Shape TopoShape::common(const std::vector<TopoDS_Shape>& shapes, Standard
         mkCommon.setAutoFuzzy();
     }
 #if OCC_VERSION_HEX >= 0x070600
-    mkCommon.Build(OCCTProgressIndicator::getAppIndicator().Start());
+    mkCommon.Build(std::make_unique<Part::ProgressIndicator>()->Start());
 #else
     mkCommon.Build();
 #endif
@@ -1879,7 +1890,7 @@ TopoDS_Shape TopoShape::fuse(const std::vector<TopoDS_Shape>& shapes, Standard_R
         mkFuse.setAutoFuzzy();
     }
 #if OCC_VERSION_HEX >= 0x070600
-    mkFuse.Build(OCCTProgressIndicator::getAppIndicator().Start());
+    mkFuse.Build(std::make_unique<Part::ProgressIndicator>()->Start());
 #else
     mkFuse.Build();
 #endif
@@ -1905,7 +1916,7 @@ TopoDS_Shape TopoShape::section(TopoDS_Shape shape, Standard_Boolean approximate
     mkSection.Init2(shape);
     mkSection.Approximation(approximate);
 #if OCC_VERSION_HEX >= 0x070600
-    mkSection.Build(OCCTProgressIndicator::getAppIndicator().Start());
+    mkSection.Build(std::make_unique<Part::ProgressIndicator>()->Start());
 #else
     mkSection.Build();
 #endif
@@ -1946,7 +1957,7 @@ TopoDS_Shape TopoShape::section(
         mkSection.setAutoFuzzy();
     }
 #if OCC_VERSION_HEX >= 0x070600
-    mkSection.Build(OCCTProgressIndicator::getAppIndicator().Start());
+    mkSection.Build(std::make_unique<Part::ProgressIndicator>()->Start());
 #else
     mkSection.Build();
 #endif
@@ -2019,7 +2030,7 @@ TopoDS_Shape TopoShape::generalFuse(
     }
     mkGFA.SetNonDestructive(Standard_True);
 #if OCC_VERSION_HEX >= 0x070600
-    mkGFA.Build(OCCTProgressIndicator::getAppIndicator().Start());
+    mkGFA.Build(std::make_unique<Part::ProgressIndicator>()->Start());
 #else
     mkGFA.Build();
 #endif
@@ -2028,7 +2039,7 @@ TopoDS_Shape TopoShape::generalFuse(
     }
     TopoDS_Shape resShape = mkGFA.Shape();
     if (mapInOut) {
-        for (TopTools_ListOfShape::Iterator it(GFAArguments); it.More(); it.Next()) {
+        for (TopTools_ListIteratorOfListOfShape it(GFAArguments); it.More(); it.Next()) {
             mapInOut->push_back(mkGFA.Modified(it.Value()));
         }
     }
@@ -2079,7 +2090,8 @@ TopoDS_Shape TopoShape::makePipeShell(
     }
     mkPipeShell.SetMode(isFrenet);
     mkPipeShell.SetTransitionMode(transMode);
-    for (TopTools_ListOfShape::Iterator it(profiles); it.More(); it.Next()) {
+    TopTools_ListIteratorOfListOfShape it;
+    for (it.Initialize(profiles); it.More(); it.Next()) {
         mkPipeShell.Add(TopoDS_Shape(it.Value()));
     }
 
@@ -2088,7 +2100,7 @@ TopoDS_Shape TopoShape::makePipeShell(
     }
 
 #if OCC_VERSION_HEX >= 0x070600
-    mkPipeShell.Build(OCCTProgressIndicator::getAppIndicator().Start());
+    mkPipeShell.Build(std::make_unique<Part::ProgressIndicator>()->Start());
 #else
     mkPipeShell.Build();
 #endif
@@ -2590,8 +2602,9 @@ TopoDS_Shape TopoShape::makeLoft(
     BRepOffsetAPI_ThruSections aGenerator(isSolid, isRuled);
     aGenerator.SetMaxDegree(maxDegree);
 
+    TopTools_ListIteratorOfListOfShape it;
     int countShapes = 0;
-    for (TopTools_ListOfShape::Iterator it(profiles); it.More(); it.Next()) {
+    for (it.Initialize(profiles); it.More(); it.Next()) {
         const TopoDS_Shape& item = it.Value();
         if (!item.IsNull() && item.ShapeType() == TopAbs_VERTEX) {
             aGenerator.AddVertex(TopoDS::Vertex(item));
@@ -2646,7 +2659,7 @@ TopoDS_Shape TopoShape::makeLoft(
     aGenerator.CheckCompatibility(anIsCheck);  // use BRepFill_CompatibleWires on profiles. force
                                                // #edges, orientation, "origin" to match.
 #if OCC_VERSION_HEX >= 0x070600
-    aGenerator.Build(OCCTProgressIndicator::getAppIndicator().Start());
+    aGenerator.Build(std::make_unique<Part::ProgressIndicator>()->Start());
 #else
     aGenerator.Build();
 #endif
@@ -2786,9 +2799,10 @@ TopoDS_Shape TopoShape::makeOffsetShape(
                 throw Standard_Failure("no image for shape");
             }
             const TopTools_ListOfShape& currentImage = img.Image(xp.Current());
+            TopTools_ListIteratorOfListOfShape listIt;
             int edgeCount(0);
             TopoDS_Edge mappedEdge;
-            for (TopTools_ListOfShape::Iterator listIt(currentImage); listIt.More(); listIt.Next()) {
+            for (listIt.Initialize(currentImage); listIt.More(); listIt.Next()) {
                 if (listIt.Value().ShapeType() != TopAbs_EDGE) {
                     continue;
                 }
@@ -2811,7 +2825,7 @@ TopoDS_Shape TopoShape::makeOffsetShape(
         aGenerator.AddWire(originalWire);
         aGenerator.AddWire(offsetWire);
 #if OCC_VERSION_HEX >= 0x070600
-        aGenerator.Build(OCCTProgressIndicator::getAppIndicator().Start());
+        aGenerator.Build(std::make_unique<Part::ProgressIndicator>()->Start());
 #else
         aGenerator.Build();
 #endif
@@ -3176,7 +3190,7 @@ TopoDS_Shape TopoShape::makeOffset2D(
                 mkWire.Add(BRepBuilderAPI_MakeEdge(v3, v1).Edge());
 
 #if OCC_VERSION_HEX >= 0x070600
-                mkWire.Build(OCCTProgressIndicator::getAppIndicator().Start());
+                mkWire.Build(std::make_unique<Part::ProgressIndicator>()->Start());
 #else
                 mkWire.Build();
 #endif
@@ -3192,7 +3206,7 @@ TopoDS_Shape TopoShape::makeOffset2D(
                 mkFace.addWire(w);
             }
 #if OCC_VERSION_HEX >= 0x070600
-            mkFace.Build(OCCTProgressIndicator::getAppIndicator().Start());
+            mkFace.Build(std::make_unique<Part::ProgressIndicator>()->Start());
 #else
             mkFace.Build();
 #endif
@@ -4003,6 +4017,22 @@ void TopoShape::getLinesFromSubElement(
     }
 }
 
+bool TopoShape::getFirstVertexFromSubElement(const Data::Segment* element, Base::Vector3d& Point) const
+{
+    if (element->is<ShapeSegment>()) {
+        const TopoDS_Shape& shape = static_cast<const ShapeSegment*>(element)->Shape;
+        if (shape.IsNull()) {
+            return false;
+        }
+        for (TopExp_Explorer xp(shape, TopAbs_VERTEX, TopAbs_EDGE); xp.More(); xp.Next()) {
+            gp_Pnt p = BRep_Tool::Pnt(TopoDS::Vertex(xp.Current()));
+            Point = Base::Vector3d {Base::convertTo<Base::Vector3d>(p)};
+            return true;
+        }
+    }
+    return false;
+}
+
 void TopoShape::getFacesFromSubElement(
     const Data::Segment* element,
     std::vector<Base::Vector3d>& points,
@@ -4037,7 +4067,7 @@ TopoDS_Shape TopoShape::defeaturing(const std::vector<TopoDS_Shape>& s) const
         defeat.AddFaceToRemove(it);
     }
 #if OCC_VERSION_HEX >= 0x070600
-    defeat.Build(OCCTProgressIndicator::getAppIndicator().Start());
+    defeat.Build(std::make_unique<Part::ProgressIndicator>()->Start());
 #else
     defeat.Build();
 #endif
@@ -4271,7 +4301,7 @@ TopoShape& TopoShape::makeFace(const std::vector<TopoShape>& shapes, const char*
     _Shape.Nullify();
 
     if (!maker || !maker[0]) {
-        maker = "Part::FaceMakerBullseye";
+        maker = "Part::FaceMakerUnified";
     }
 
     std::unique_ptr<FaceMaker> mkFace = FaceMaker::ConstructFromType(maker);
@@ -4284,7 +4314,7 @@ TopoShape& TopoShape::makeFace(const std::vector<TopoShape>& shapes, const char*
         }
     }
 #if OCC_VERSION_HEX >= 0x070600
-    mkFace->Build(OCCTProgressIndicator::getAppIndicator().Start());
+    mkFace->Build(std::make_unique<Part::ProgressIndicator>()->Start());
 #else
     mkFace->Build();
 #endif

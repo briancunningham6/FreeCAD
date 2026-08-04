@@ -28,6 +28,7 @@
 #include <TopoDS.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Face.hxx>
+#include <TColGeom_SequenceOfCurve.hxx>
 
 
 #include <Base/PyWrapParseTupleAndKeywords.h>
