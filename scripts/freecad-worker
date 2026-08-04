@@ -75,7 +75,29 @@ fi
 # it resolves fine (system OCCT, or already on DYLD_LIBRARY_PATH) are left
 # untouched.
 _OCCT_PROBE_LIB="libTKFillet"
-if ! { [ -n "${DYLD_LIBRARY_PATH:-}" ] && ls "${DYLD_LIBRARY_PATH//:/ }" 2>/dev/null | grep -q "^${_OCCT_PROBE_LIB}\."; } \
+
+# True if any colon-separated directory in $1 contains a file matching
+# "${_OCCT_PROBE_LIB}.*". Iterates with IFS=':' so each entry is checked as
+# its own argument (a naive "${VAR//:/ }" substitution inside double quotes
+# does NOT word-split — it hands ls one bogus multi-dir string — so this
+# must not be "simplified" back to that form).
+_occt_lib_on_path() {
+    local _dirs="$1" _d
+    local _oldifs="$IFS"
+    IFS=':'
+    for _d in $_dirs; do
+        IFS="$_oldifs"
+        [ -n "$_d" ] || continue
+        if ls "$_d" 2>/dev/null | grep -q "^${_OCCT_PROBE_LIB}\."; then
+            return 0
+        fi
+        IFS=':'
+    done
+    IFS="$_oldifs"
+    return 1
+}
+
+if ! { [ -n "${DYLD_LIBRARY_PATH:-}" ] && _occt_lib_on_path "$DYLD_LIBRARY_PATH"; } \
    && ! ls "$_FREECAD_LIB_DIR" 2>/dev/null | grep -q "^${_OCCT_PROBE_LIB}\."; then
     _OCCT_LIB_DIR="${OCCT_LIB_DIR:-}"
 
