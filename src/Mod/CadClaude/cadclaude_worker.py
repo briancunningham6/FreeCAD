@@ -22,6 +22,7 @@ import os
 import re
 import traceback
 import io
+import json
 
 
 def _redirect_freecad_noise():
@@ -299,14 +300,50 @@ def _announce_elixifree_source():
         sys.stderr.write("cadclaude_worker: elixifree unavailable: %s\n" % exc)
 
 
+def _collect_build_info():
+    """Build identity of this FreeCAD process, or None if unavailable.
+
+    Imported lazily so the module stays importable outside FreeCAD.
+    The Part import doubles as a pre-warm of the module every real
+    workload uses. Never raises.
+    """
+    try:
+        import FreeCAD
+        import Part
+
+        return {
+            "freecad": ".".join(
+                FreeCAD.ConfigGet(key)
+                for key in ("BuildVersionMajor", "BuildVersionMinor", "BuildVersionPoint")
+            ),
+            "git": FreeCAD.ConfigGet("BuildRevisionHash")[:10],
+            "branch": FreeCAD.ConfigGet("BuildRevisionBranch"),
+            "occt": Part.OCC_VERSION,
+            "python": sys.version.split()[0],
+        }
+    except Exception:  # noqa: BLE001 — version info must never break boot
+        return None
+
+
+def _ready_line(info):
+    """The READY protocol line: bare, or with a single-line JSON payload."""
+    if not info:
+        return "READY\n"
+    try:
+        return "READY %s\n" % json.dumps(info, separators=(",", ":"), sort_keys=True)
+    except Exception:  # noqa: BLE001
+        return "READY\n"
+
+
 def main():
     protocol_out = _redirect_freecad_noise()
 
     _configure_elixifree_path()
     _announce_elixifree_source()
 
-    # Signal readiness to the Elixir pool manager
-    if not _write(protocol_out, "READY\n"):
+    # Signal readiness to the Elixir pool manager, with build identity
+    # (design spec 2026-08-04); falls back to bare READY on any failure.
+    if not _write(protocol_out, _ready_line(_collect_build_info())):
         return
 
     while True:
