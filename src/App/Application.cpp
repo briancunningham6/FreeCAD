@@ -41,7 +41,6 @@
 # include <boost/scope_exit.hpp>
 # include <chrono>
 # include <optional>
-# include <random>
 # include <memory>
 # include <utility>
 # include <set>
@@ -53,6 +52,7 @@
 # include <tuple>
 # include <vector>
 # include <fmt/format.h>
+# include <fmt/ranges.h>
 
 #ifdef FC_OS_WIN32
 # include <Shlobj.h>
@@ -88,12 +88,13 @@
 #include <Base/Interpreter.h>
 #include <Base/MatrixPy.h>
 #include <Base/QuantityPy.h>
-#include <Base/Parameter.h>
+#include <Base/ParameterPy.h>
 #include <Base/Persistence.h>
 #include <Base/PlacementPy.h>
 #include <Base/PrecisionPy.h>
 #include <Base/ProgressIndicatorPy.h>
 #include <Base/RotationPy.h>
+#include <Base/ConsoleModulePy.h>
 #include <Base/UniqueNameManager.h>
 #include <Base/TimeInfo.h>
 #include <Base/SystemHandler.h>
@@ -103,6 +104,7 @@
 #include <Base/TypePy.h>
 #include <Base/UnitPy.h>
 #include <Base/UnitsApi.h>
+#include <Base/UnitsModulePy.h>
 #include <Base/VectorPy.h>
 
 #include "Annotation.h"
@@ -110,6 +112,7 @@
 #include "ApplicationDirectories.h"
 #include "ApplicationDirectoriesPy.h"
 #include "ApplicationPy.h"
+#include "FreeCADModulePy.h"
 #include "CleanupProcess.h"
 #include "ComplexGeoData.h"
 #include "ConsoleQtBridge.h"
@@ -120,6 +123,7 @@
 #include "DocumentObjectGroupPy.h"
 #include "DocumentObserver.h"
 #include "DocumentPy.h"
+#include "DocumentSettingsPy.h"
 #include "ExpressionParser.h"
 #include "FeatureTest.h"
 #include "FeaturePython.h"
@@ -206,6 +210,83 @@ using namespace App;
 namespace sp = std::placeholders;
 namespace fs = std::filesystem;
 
+namespace
+{
+
+RecomputeRequest takeNextRecomputeRequest(std::deque<RecomputeRequest>& requests)
+{
+    RecomputeRequest request = std::move(requests.front());
+    requests.pop_front();
+    return request;
+}
+
+bool requestTargetsDocument(const RecomputeRequest& request, const std::string& documentName)
+{
+    return request.documentName == documentName;
+}
+
+bool documentCanRecomputeOnWorker(const Document& document)
+{
+    try {
+        const auto& objects = document.getObjects();
+        std::vector<DocumentObject*> recomputeRoots(objects.begin(), objects.end());
+        const auto recomputeObjects = Document::getDependencyList(recomputeRoots, Document::DepSort);
+
+        return std::ranges::all_of(recomputeObjects, [](const DocumentObject* object) {
+            return object && object->canRecomputeOnWorker();
+        });
+    }
+    catch (const Base::BadGraphError&) {
+        return false;
+    }
+}
+
+void reportRecomputeException(const Base::Exception& exception)
+{
+    if (App::MainThreadSignalConfig::hasHooks()) {
+        if (auto* app = QCoreApplication::instance()) {
+            QMetaObject::invokeMethod(
+                app,
+                [exception]() mutable { exception.reportException(); },
+                Qt::QueuedConnection
+            );
+            return;
+        }
+    }
+
+    exception.reportException();
+}
+
+RecomputeResult processRecomputeRequest(RecomputeRequest& request)
+{
+    RecomputeResult result;
+
+    try {
+        if (Document* document = request.resolveDocument()) {
+            document->recompute({}, request.force, nullptr, request.options);
+        }
+
+        if (DocumentObject* documentObject = request.resolveDocumentObject()) {
+            documentObject->recomputeFeature(request.recursive);
+        }
+    }
+    catch (Base::BadGraphError& exception) {
+        result.exception = std::make_unique<Base::BadGraphError>(std::move(exception));
+        result.failure = RecomputeFailure::DependencyCycle;
+        result.success = false;
+    }
+    catch (Base::Exception& exception) {
+        reportRecomputeException(exception);
+        result.exception = std::make_unique<Base::Exception>(std::move(exception));
+        result.failure = RecomputeFailure::Exception;
+        result.success = false;
+    }
+
+    return result;
+}
+
+}  // namespace
+
 //==========================================================================
 // Application
 //==========================================================================
@@ -218,28 +299,55 @@ Base::ConsoleObserverFile *Application::_pConsoleObserverFile = nullptr;
 AppExport std::map<std::string, std::string> Application::mConfig;
 std::unique_ptr<ApplicationDirectories> Application::_appDirs;
 
+RecomputeRequest RecomputeRequest::fromDocument(const Document& document, bool force, int options)
+{
+    RecomputeRequest request;
+    request.documentName = document.getName();
+    request.force = force;
+    request.options = options;
+    return request;
+}
+
+RecomputeRequest RecomputeRequest::fromDocumentObject(const DocumentObject& documentObject, bool recursive)
+{
+    RecomputeRequest request;
+
+    if (const Document* document = documentObject.getDocument()) {
+        request.documentName = document->getName();
+    }
+
+    request.documentObjectName = documentObject.getNameInDocument();
+    request.recursive = recursive;
+    return request;
+}
+
+Document* RecomputeRequest::resolveDocument() const
+{
+    if (documentName.empty()) {
+        return nullptr;
+    }
+
+    return GetApplication().getDocument(documentName.c_str());
+}
+
+DocumentObject* RecomputeRequest::resolveDocumentObject() const
+{
+    if (documentObjectName.empty()) {
+        return nullptr;
+    }
+
+    if (Document* document = resolveDocument()) {
+        return document->getObject(documentObjectName.c_str());
+    }
+
+    return nullptr;
+}
+
 
 //**************************************************************************
 // Construction and destruction
 
 // clang-format off
-PyDoc_STRVAR(FreeCAD_doc,
-     "The functions in the FreeCAD module allow working with documents.\n"
-     "The FreeCAD instance provides a list of references of documents which\n"
-     "can be addressed by a string. Hence the document name must be unique.\n"
-     "\n"
-     "The document has the read-only attribute FileName which points to the\n"
-     "file the document should be stored to.\n"
-    );
-
-PyDoc_STRVAR(Console_doc,
-    "FreeCAD Console module.\n\n"
-    "The Console module contains functions to manage log entries, messages,\n"
-    "warnings and errors.\n"
-    "There are also functions to get/set the status of the observers used as\n"
-    "logging interfaces."
-    );
-
 PyDoc_STRVAR(Base_doc,
     "The Base module contains the classes for the geometric basics\n"
     "like vector, matrix, bounding box, placement, rotation, axis, ...\n"
@@ -259,19 +367,18 @@ init_freecad_base_module(void)
     return PyModule_Create(&BaseModuleDef);
 }
 
-// Set in inside Application
-static PyMethodDef* ApplicationMethods = nullptr;
-
 PyMODINIT_FUNC
 init_freecad_module(void)
 {
     static struct PyModuleDef FreeCADModuleDef = {
         PyModuleDef_HEAD_INIT,
-        "FreeCAD", FreeCAD_doc, -1,
-        ApplicationMethods,
+        "FreeCAD", App::FreeCADModulePy::moduleDocumentation(), -1,
+        nullptr,
         nullptr, nullptr, nullptr, nullptr
     };
-    return PyModule_Create(&FreeCADModuleDef);
+    PyObject* module = PyModule_Create(&FreeCADModuleDef);
+    App::FreeCADModulePy::addModuleMethods(module);
+    return module;
 }
 
 PyMODINIT_FUNC
@@ -293,10 +400,22 @@ Application::Application(std::map<std::string,std::string> &mConfig)
     mpcPramManager["System parameter"] = _pcSysParamMngr;
     mpcPramManager["User parameter"] = _pcUserParamMngr;
 
+    _stopRecomputeThread = false;
+    _recomputeThread = std::thread(&Application::recomputeWorker, this);
+
     setupPythonTypes();
 }
 
-Application::~Application() = default;
+Application::~Application()
+{
+    // Signal the recompute worker thread to stop and join it.
+    _stopRecomputeThread = true;
+    _recomputeRequestAvailable.notify_all();
+
+    if (_recomputeThread.joinable()) {
+        _recomputeThread.join();
+    }
+}
 
 void Application::setupPythonTypes()
 {
@@ -304,7 +423,6 @@ void Application::setupPythonTypes()
     Base::PyGILStateLocker lock;
     PyObject* modules = PyImport_GetModuleDict();
 
-    ApplicationMethods = ApplicationPy::Methods;
     PyObject* pAppModule = PyImport_ImportModule ("FreeCAD");
     if (!pAppModule) {
         PyErr_Clear();
@@ -316,11 +434,12 @@ void Application::setupPythonTypes()
     // clang-format off
     static struct PyModuleDef ConsoleModuleDef = {
         PyModuleDef_HEAD_INIT,
-        "__FreeCADConsole__", Console_doc, -1,
-        Base::ConsoleSingleton::Methods,
+        "__FreeCADConsole__", Base::ConsoleModulePy::moduleDocumentation(), -1,
+        nullptr,
         nullptr, nullptr, nullptr, nullptr
     };
     PyObject* pConsoleModule = PyModule_Create(&ConsoleModuleDef);
+    Base::ConsoleModulePy::addModuleMethods(pConsoleModule);
 
     // fake Image module
     PyObject* imageModule = init_image_module();
@@ -376,6 +495,7 @@ void Application::setupPythonTypes()
     Base::InterpreterSingleton::addType(&PropertyContainerPy::Type, pAppModule, "PropertyContainer");
     Base::InterpreterSingleton::addType(&ExtensionContainerPy::Type, pAppModule, "ExtensionContainer");
     Base::InterpreterSingleton::addType(&DocumentPy::Type, pAppModule, "Document");
+    Base::InterpreterSingleton::addType(&DocumentSettingsPy::Type, pAppModule, "DocumentSettings");
     Base::InterpreterSingleton::addType(&DocumentObjectPy::Type, pAppModule, "DocumentObject");
     Base::InterpreterSingleton::addType(&DocumentObjectGroupPy::Type, pAppModule, "DocumentObjectGroup");
     Base::InterpreterSingleton::addType(&GeoFeaturePy::Type, pAppModule, "GeoFeature");
@@ -387,6 +507,10 @@ void Application::setupPythonTypes()
     Base::InterpreterSingleton::addType(&GeoFeatureGroupExtensionPy::Type, pAppModule, "GeoFeatureGroupExtension");
     Base::InterpreterSingleton::addType(&OriginGroupExtensionPy::Type, pAppModule, "OriginGroupExtension");
     Base::InterpreterSingleton::addType(&LinkBaseExtensionPy::Type, pAppModule, "LinkBaseExtension");
+
+    Base::ParameterGrpPy::init_type();
+    Base::InterpreterSingleton::addType(Base::ParameterGrpPy::type_object(),
+        pAppModule, "ParameterGrp");
 
     //insert Base and Console
     Py_INCREF(pBaseModule);
@@ -402,11 +526,12 @@ void Application::setupPythonTypes()
     //insert Units module
     static struct PyModuleDef UnitsModuleDef = {
         PyModuleDef_HEAD_INIT,
-        "Units", "The Unit API", -1,
-        Base::UnitsApi::Methods,
+        "Units", Base::UnitsModulePy::moduleDocumentation(), -1,
+        nullptr,
         nullptr, nullptr, nullptr, nullptr
     };
     PyObject* pUnitsModule = PyModule_Create(&UnitsModuleDef);
+    Base::UnitsModulePy::addModuleMethods(pUnitsModule);
     Base::InterpreterSingleton::addType(&Base::QuantityPy  ::Type,pUnitsModule,"Quantity");
     // make sure to set the 'nb_true_divide' slot
     Base::InterpreterSingleton::addType(&Base::UnitPy      ::Type,pUnitsModule,"Unit");
@@ -421,6 +546,7 @@ void Application::setupPythonTypes()
     Base::Vector2dPy::init_type();
     Base::InterpreterSingleton::addType(Base::Vector2dPy::type_object(),
         pBaseModule,"Vector2d");
+
     // clang-format on
 }
 
@@ -546,6 +672,10 @@ bool Application::closeDocument(const Document* doc)
 
 bool Application::closeDocument(const char* name)
 {
+    const std::string documentName(name);
+
+    cancelRecomputeRequestsForDocument(documentName);
+
     const auto pos = DocMap.find( name );
     if (pos == DocMap.end()) // no such document
         return false;
@@ -672,6 +802,85 @@ bool Application::isRestoring() const {
 
 bool Application::isClosingAll() const {
     return _isClosingAll;
+}
+
+bool Application::isAsyncRecomputeEnabled()
+{
+    static const ParameterGrp::handle hGrp = GetParameterGroupByPath(
+        "User parameter:BaseApp/Preferences/Document"
+    );
+    bool enableAsyncRecompute = hGrp->GetBool("EnableAsyncRecompute", true);
+    return enableAsyncRecompute;
+}
+
+bool Application::isFineGrainedRecomputeEnabled()
+{
+    static const ParameterGrp::handle hGrp = GetParameterGroupByPath(
+        "User parameter:BaseApp/Preferences/General"
+    );
+    bool enableFineGrainedRecompute = hGrp->GetBool("FineGrainedRecompute");
+    return enableFineGrainedRecompute;
+}
+
+bool Application::canRecomputeRequestOnWorker(const RecomputeRequest& req) const
+{
+    if (DocumentObject* documentObject = req.resolveDocumentObject()) {
+        return documentObject->canRecomputeOnWorker();
+    }
+
+    Document* document = req.resolveDocument();
+    return !document || documentCanRecomputeOnWorker(*document);
+}
+
+void Application::queueRecomputeRequest(RecomputeRequest req)
+{
+    if (!canRecomputeRequestOnWorker(req)) {
+        RecomputeResult result;
+
+        // Requests that are not worker-safe stay on the caller thread unless a
+        // GUI main-thread hop is required. In App-only/headless mode there are
+        // no GUI hooks, so processing inline preserves the "stay off the
+        // worker" guarantee without inventing a synthetic main thread.
+        if (App::MainThreadSignalConfig::hasHooks()
+            && !App::MainThreadSignalConfig::isMainThread()) {
+            App::MainThreadSignalConfig::invoke(
+                [&req, &result]() { result = processRecomputeRequest(req); },
+                /*blocking=*/true
+            );
+        }
+        else {
+            result = processRecomputeRequest(req);
+        }
+
+        if (req.callback) {
+            req.callback(req, result);
+        }
+        return;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(_recomputeMutex);
+        _recomputeRequests.push_back(std::move(req));
+    }
+    notifyRecomputeWorker();
+}
+
+void Application::cancelRecomputeRequestsForDocument(const std::string& documentName)
+{
+    if (documentName.empty()) {
+        return;
+    }
+
+    std::unique_lock<std::mutex> lock(_recomputeMutex);
+    _recomputeStateChanged.wait(lock, [this, &documentName] {
+        return !_recomputeDocumentsInProgress.contains(documentName);
+    });
+
+    // Cancellation runs on document-close boundaries, so a linear scan keeps
+    // the queue simple without affecting the steady-state worker path.
+    std::erase_if(_recomputeRequests, [&documentName](const RecomputeRequest& request) {
+        return requestTargetsDocument(request, documentName);
+    });
 }
 
 struct DocTiming {
@@ -1135,19 +1344,18 @@ Application::TransactionSignaller::~TransactionSignaller() {
     }
 }
 
-int64_t Application::applicationPid()
+int64_t Application::uniqueInstanceId()
 {
-    static int64_t randomNumber = []() {
+    static int64_t uniqueId = []() {
         const auto tp = std::chrono::high_resolution_clock::now();
         const auto dur = tp.time_since_epoch();
-        const auto seed = dur.count();
-        std::mt19937 generator(static_cast<unsigned>(seed));
-        constexpr int64_t minValue {1};
-        constexpr int64_t maxValue {1000000};
-        std::uniform_int_distribution<int64_t> distribution(minValue, maxValue);
-        return distribution(generator);
+        // Mix up the bits. Smallest implementation of a xorshift64 there is.
+        auto hash = static_cast<int64_t>(dur.count());
+        hash ^= hash << 7;
+        hash ^= hash >> 9;
+        return hash & 0x7FFFFFFFFFFFFFFFULL;
     }();
-    return randomNumber;
+    return uniqueId;
 }
 
 std::string Application::getHomePath()
@@ -2099,6 +2307,7 @@ void Application::initTypes()
     App::FeatureTestAbsAddress     ::init();
     App::FeatureTestPlacement      ::init();
     App::FeatureTestAttribute      ::init();
+    App::FeatureTestAsyncBlocker   ::init();
 
     // Feature class
     App::FeaturePython             ::init();
@@ -2595,7 +2804,6 @@ void Application::initConfig(int argc, char ** argv)
 
         auto moduleName = "FreeCAD";
         PyImport_AddModule(moduleName);
-        ApplicationMethods = ApplicationPy::Methods;
         PyObject *pyModule = init_freecad_module();
         PyDict_SetItemString(sysModules, moduleName, pyModule);
         Py_DECREF(pyModule);
@@ -2741,12 +2949,17 @@ void Application::initConfig(int argc, char ** argv)
     mConfig["BOOST_VERSION"] = BOOST_LIB_VERSION;
     mConfig["PYTHON_VERSION"] = PY_VERSION;
     mConfig["QT_VERSION"] = QT_VERSION_STR;
+    mConfig["COIN3D_VERSION"] = fcCoin3dVersion;
+    mConfig["COIN3D_SOURCE"] = fcCoin3dSource;
+    mConfig["PIVY_VERSION"] = fcPivyVersion;
+    mConfig["PIVY_SOURCE"] = fcPivySource;
     mConfig["EIGEN_VERSION"] = fcEigen3Version;
     mConfig["PYSIDE_VERSION"] = fcPysideVersion;
 #ifdef SMESH_VERSION_STR
     mConfig["SMESH_VERSION"] = SMESH_VERSION_STR;
 #endif
     mConfig["XERCESC_VERSION"] = fcXercescVersion;
+    mConfig["CLIPPER2_VERSION"] = fcClipper2Version;
 
 
     logStatus();
@@ -2826,7 +3039,6 @@ std::list<std::string> Application::processFiles(const std::list<std::string>& f
     std::list<std::string> processed;
     Base::Console().log("Init: Processing command line files\n");
     for (const auto & it : files) {
-
         Base::FileInfo file(it);
         // Can we safely remove the isSymlink check and directly query the canonical
         // path for every string? The reason for avoiding it currently is that
@@ -2963,6 +3175,48 @@ void Application::runApplication()
     }
     else {
         Base::Console().log("Unknown Run mode (%d) in main()?!?\n\n", mConfig["RunMode"].c_str());
+    }
+}
+
+void Application::notifyRecomputeWorker()
+{
+    _recomputeRequestAvailable.notify_one();
+}
+
+void Application::recomputeWorker()
+{
+    while (!_stopRecomputeThread) {
+        std::unique_lock<std::mutex> lock(_recomputeMutex);
+        // Wait until either stop is signaled or there is at least one pending request.
+        _recomputeRequestAvailable.wait(lock, [this] {
+            return _stopRecomputeThread || !_recomputeRequests.empty();
+        });
+        if (_stopRecomputeThread) {
+            break;
+        }
+
+        // Process all pending recompute requests.
+        while (!_recomputeRequests.empty()) {
+            RecomputeRequest request = takeNextRecomputeRequest(_recomputeRequests);
+            if (!request.documentName.empty()) {
+                _recomputeDocumentsInProgress.insert(request.documentName);
+            }
+
+            // Unlock while processing to allow other threads to add new requests.
+            lock.unlock();
+
+            RecomputeResult result = processRecomputeRequest(request);
+
+            if (request.callback) {
+                request.callback(request, result);
+            }
+
+            lock.lock();
+            if (!request.documentName.empty()) {
+                _recomputeDocumentsInProgress.erase(request.documentName);
+                _recomputeStateChanged.notify_all();
+            }
+        }
     }
 }
 

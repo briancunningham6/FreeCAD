@@ -66,6 +66,78 @@ if [ -d "$_FREECAD_LIB_DIR" ] || [ -d "$_CONDA_LIB_DIR" ]; then
     export DYLD_LIBRARY_PATH="${_FREECAD_LIB_DIR}:${_CONDA_LIB_DIR}${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
 fi
 
+# ── Custom OCCT lib dir (only when needed) ───────────────────────────────────
+# On machines with a custom-built OpenCascade (not the Homebrew/conda-shipped
+# version), Part.so's @rpath OCCT references (libTKFillet.dylib etc.) don't
+# resolve from _FREECAD_LIB_DIR or _CONDA_LIB_DIR above, so a plain `import
+# Part` fails with "Library not loaded: @rpath/libTKFillet.*.dylib". Only
+# probe/append when that OCCT lib isn't already reachable, so machines where
+# it resolves fine (system OCCT, or already on DYLD_LIBRARY_PATH) are left
+# untouched.
+_OCCT_PROBE_LIB="libTKFillet"
+
+# True if any colon-separated directory in $1 contains a file matching
+# "${_OCCT_PROBE_LIB}.*". Iterates with IFS=':' so each entry is checked as
+# its own argument (a naive "${VAR//:/ }" substitution inside double quotes
+# does NOT word-split — it hands ls one bogus multi-dir string — so this
+# must not be "simplified" back to that form).
+_occt_lib_on_path() {
+    local _dirs="$1" _d
+    local _oldifs="$IFS"
+    IFS=':'
+    for _d in $_dirs; do
+        IFS="$_oldifs"
+        [ -n "$_d" ] || continue
+        if ls "$_d" 2>/dev/null | grep -q "^${_OCCT_PROBE_LIB}\."; then
+            return 0
+        fi
+        IFS=':'
+    done
+    IFS="$_oldifs"
+    return 1
+}
+
+if ! { [ -n "${DYLD_LIBRARY_PATH:-}" ] && _occt_lib_on_path "$DYLD_LIBRARY_PATH"; } \
+   && ! ls "$_FREECAD_LIB_DIR" 2>/dev/null | grep -q "^${_OCCT_PROBE_LIB}\."; then
+    _OCCT_LIB_DIR="${OCCT_LIB_DIR:-}"
+
+    if [ -z "$_OCCT_LIB_DIR" ]; then
+        # Derive from an installed module's @rpath OCCT reference (e.g.
+        # Part.so -> @rpath/libTKFillet.8.0.dylib), then search common OCCT
+        # install roots for a lib/ dir containing that exact file.
+        _OCCT_DYLIB_NAME=""
+        for _mod in "$_FREECAD_LIB_DIR"/*.so; do
+            [ -f "$_mod" ] || continue
+            _ref="$(otool -L "$_mod" 2>/dev/null | awk -v p="$_OCCT_PROBE_LIB" '$1 ~ "@rpath/" p "\\." {print $1; exit}')"
+            if [ -n "$_ref" ]; then
+                _OCCT_DYLIB_NAME="${_ref#@rpath/}"
+                break
+            fi
+        done
+
+        if [ -n "$_OCCT_DYLIB_NAME" ]; then
+            for _candidate in \
+                "$HOME/dev/OCCT/install/lib" \
+                "/Users/user/dev/OCCT/install/lib"
+            do
+                if [ -f "$_candidate/$_OCCT_DYLIB_NAME" ]; then
+                    _OCCT_LIB_DIR="$_candidate"
+                    break
+                fi
+            done
+        fi
+    fi
+
+    # Last-resort fallback: known custom OCCT install location on this machine.
+    if [ -z "$_OCCT_LIB_DIR" ] && [ -d "/Users/user/dev/OCCT/install/lib" ]; then
+        _OCCT_LIB_DIR="/Users/user/dev/OCCT/install/lib"
+    fi
+
+    if [ -n "$_OCCT_LIB_DIR" ] && [ -d "$_OCCT_LIB_DIR" ]; then
+        export DYLD_LIBRARY_PATH="${_OCCT_LIB_DIR}${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+    fi
+fi
+
 # ── Launch ────────────────────────────────────────────────────────────────────
 # -c puts FreeCAD in console mode (RunMode=Cmd, no GUI).
 # The inline Python string is not a valid filesystem path so FreeCAD falls

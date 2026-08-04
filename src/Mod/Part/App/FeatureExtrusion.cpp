@@ -58,7 +58,7 @@ const char* Extrusion::eInnerWireTaperStrings[] = {"Inverted", "SameAsOuter", nu
 
 namespace
 {
-std::vector<std::string> MakerEnums = {"Simple", "Cheese", "Extrusion", "Bullseye"};
+std::vector<std::string> MakerEnums = {"Simple", "Cheese", "Extrusion", "Bullseye", "Unified"};
 
 const char* enumToClass(const char* mode)
 {
@@ -74,8 +74,11 @@ const char* enumToClass(const char* mode)
     if (MakerEnums.at(3) == mode) {
         return "Part::FaceMakerBullseye";
     }
+    if (MakerEnums.at(4) == mode) {
+        return "Part::FaceMakerUnified";
+    }
 
-    return "Part::FaceMakerBullseye";
+    return "Part::FaceMakerUnified";
 }
 
 const char* classToEnum(const char* type)
@@ -92,8 +95,11 @@ const char* classToEnum(const char* type)
     if (strcmp(type, "Part::FaceMakerBullseye") == 0) {
         return MakerEnums.at(3).c_str();
     }
+    if (strcmp(type, "Part::FaceMakerUnified") == 0) {
+        return MakerEnums.at(4).c_str();
+    }
 
-    return MakerEnums.at(3).c_str();
+    return MakerEnums.at(4).c_str();
 }
 
 void restoreFaceMakerMode(Extrusion* self)
@@ -474,26 +480,20 @@ void FaceMakerExtrusion::Build()
     }
 
     if (!wires.empty()) {
-        // try {
         TopoDS_Shape res = FaceMakerCheese::makeFace(wires);
         if (!res.IsNull()) {
             this->myShape = res;
         }
-        //}
-        // catch (...) {
-
-        //}
     }
-
-    this->Done();
+    postBuild();
 }
 
 void Part::Extrusion::setupObject()
 {
     Part::Feature::setupObject();
     // default for newly created features
-    this->FaceMakerMode.setValue(MakerEnums.at(3).c_str());
-    this->FaceMakerClass.setValue("Part::FaceMakerBullseye");
+    this->FaceMakerMode.setValue(MakerEnums.at(4).c_str());
+    this->FaceMakerClass.setValue("Part::FaceMakerUnified");
 }
 
 void Extrusion::onDocumentRestored()

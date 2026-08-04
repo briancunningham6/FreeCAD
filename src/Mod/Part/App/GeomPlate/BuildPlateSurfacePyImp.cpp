@@ -30,7 +30,6 @@
 #include <TColgp_SequenceOfXY.hxx>
 #include <TColgp_SequenceOfXYZ.hxx>
 
-
 #include "GeomPlate/BuildPlateSurfacePy.h"
 #include "GeomPlate/BuildPlateSurfacePy.cpp"
 #include "GeomPlate/CurveConstraintPy.h"

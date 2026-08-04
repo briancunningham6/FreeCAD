@@ -59,10 +59,8 @@
 #include <TColStd_ListOfTransient.hxx>
 #include <TColgp_SequenceOfXY.hxx>
 #include <TColgp_SequenceOfXYZ.hxx>
-#include <TColgp_Array1OfPnt.hxx>
 #include <TColStd_Array1OfInteger.hxx>
-
-
+#include <TColgp_Array1OfPnt.hxx>
 #include <TopoDS.hxx>
 #if OCC_VERSION_HEX < 0x070600
 # include <Adaptor3d_HCurveOnSurface.hxx>
@@ -160,7 +158,7 @@ Handle(Geom_Surface) Part::Tools::makeSurface(
     Handle(Geom_Surface) aRes;
     GeomPlate_BuildPlateSurface aPlateBuilder(aDeg, aNbPnts, aNbIter, aTol2d, aTol3d, anAngTol, aCurvTol);
 
-    TColStd_ListOfTransient::Iterator anIt(theBoundaries);
+    TColStd_ListIteratorOfListOfTransient anIt(theBoundaries);
     if (anIt.More()) {
         int i = 1;
         for (; anIt.More(); anIt.Next(), i++) {

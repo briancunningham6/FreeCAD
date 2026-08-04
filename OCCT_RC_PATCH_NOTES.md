@@ -1,3 +1,9 @@
+> **HISTORICAL (2026-08):** Upstream FreeCAD main now ships official OCCT 7/8
+> compatibility ("Make common between OCCT 7 and 8" campaign). The patch
+> strategy below was used between April–August 2026 and has been dropped in
+> favor of upstream's guarded support. Kept for reference for future OCCT
+> release-candidate experiments.
+
 # FreeCAD + OpenCASCADE RC Compatibility Patch Guide
 
 ## Goal

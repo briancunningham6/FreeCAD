@@ -37,7 +37,9 @@
 #include <Standard_Character.hxx>
 #include <Standard_ConstructionError.hxx>
 #include <Standard_CString.hxx>
-#include <Standard_ConstructionError.hxx>
+#if OCC_VERSION_HEX < 0x080000
+# include <Standard_ConstructionError.hxx>
+#endif
 #include <Standard_DefineHandle.hxx>
 #include <Standard_DimensionError.hxx>
 #include <Standard_DimensionMismatch.hxx>
@@ -69,13 +71,17 @@
 #include <Standard_OutOfRange.hxx>
 #include <Standard_Overflow.hxx>
 #include <Standard_Persistent.hxx>
-#include <Standard_PrimitiveTypes.hxx>
+#if OCC_VERSION_HEX < 0x080000
+# include <Standard_PrimitiveTypes.hxx>
+#endif
 #include <Standard_ProgramError.hxx>
 #include <Standard_RangeError.hxx>
 #include <Standard_Real.hxx>
 #include <Standard_ShortReal.hxx>
 #include <Standard_SStream.hxx>
-#include <Standard_Stream.hxx>
+#if OCC_VERSION_HEX < 0x080000
+# include <Standard_Stream.hxx>
+#endif
 #include <Standard_Transient.hxx>
 #include <Standard_Type.hxx>
 #include <Standard_TypeDef.hxx>
@@ -147,7 +153,11 @@
 #include <BRepBuilderAPI_Transform.hxx>
 
 #include <BRepCheck_Analyzer.hxx>
-#include <BRepCheck_ListIteratorOfListOfStatus.hxx>
+#if OCC_VERSION_HEX >= 0x080000
+# include <BRepCheck_ListOfStatus.hxx>
+#else
+# include <BRepCheck_ListIteratorOfListOfStatus.hxx>
+#endif
 #include <BRepCheck_Result.hxx>
 #include <BRepCheck_Solid.hxx>
 #include <BRepClass_FaceClassifier.hxx>
@@ -168,7 +178,14 @@
 #include <BRepGProp_Face.hxx>
 #include <BRepIntCurveSurface_Inter.hxx>
 #include <BRepLProp_CLProps.hxx>
-#include <BRepLProp_CurveTool.hxx>
+#if OCC_VERSION_HEX >= 0x080000 && !defined(OCC_VERSION_DEVELOPMENT)
+# include <LProp_CurveUtils.hxx>
+#else
+// OCC_VERSION_DEVELOPMENT guard: pre-release 8.0.0 builds (e.g. rc4) do not yet
+// provide LProp_CurveUtils.hxx; fall back to the pre-8.0 header until the final
+// 8.0.0 release (which omits OCC_VERSION_DEVELOPMENT).
+# include <BRepLProp_CurveTool.hxx>
+#endif
 #include <BRepLProp_SLProps.hxx>
 #include <BRepLib.hxx>
 #include <BRepLib_FindSurface.hxx>
@@ -292,7 +309,14 @@
 #include <Geom2dConvert_ApproxCurve.hxx>
 #include <Geom2dConvert_BSplineCurveToBezierCurve.hxx>
 #include <Geom2dConvert_CompCurveToBSplineCurve.hxx>
-#include <Geom2dLProp_CLProps2d.hxx>
+#if OCC_VERSION_HEX >= 0x080000 && !defined(OCC_VERSION_DEVELOPMENT)
+# include <GeomLProp_CLProps.hxx>
+#else
+// OCC_VERSION_DEVELOPMENT guard: pre-release 8.0.0 builds (e.g. rc4) still name
+// the 2D local-properties class Geom2dLProp_CLProps2d; the unified GeomLProp_CLProps2d
+// name only lands with the final 8.0.0 release (which omits OCC_VERSION_DEVELOPMENT).
+# include <Geom2dLProp_CLProps2d.hxx>
+#endif
 #include <GeomAdaptor_Curve.hxx>
 #include <GeomAbs_CurveType.hxx>
 #include <GeomAdaptor.hxx>
@@ -477,7 +501,9 @@
 #include <TColStd_Array2OfReal.hxx>
 #include <TColStd_HArray1OfBoolean.hxx>
 #include <TColStd_HSequenceOfTransient.hxx>
-#include <TColStd_MapIteratorOfMapOfTransient.hxx>
+#if OCC_VERSION_HEX < 0x080000
+# include <TColStd_MapIteratorOfMapOfTransient.hxx>
+#endif
 #include <TColStd_MapOfTransient.hxx>
 #include <TColStd_SequenceOfExtendedString.hxx>
 
@@ -497,15 +523,18 @@
 #include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopLoc_Location.hxx>
-#include <TopTools_DataMapIteratorOfDataMapOfShapeShape.hxx>
-#include <TopTools_DataMapIteratorOfDataMapOfIntegerListOfShape.hxx>
+#if OCC_VERSION_HEX < 0x080000
+# include <TopTools_DataMapIteratorOfDataMapOfShapeShape.hxx>
+# include <TopTools_DataMapIteratorOfDataMapOfIntegerListOfShape.hxx>
+#endif
 #include <TopTools_DataMapOfIntegerListOfShape.hxx>
 #include <TopTools_DataMapOfIntegerShape.hxx>
 #include <TopTools_HSequenceOfShape.hxx>
 #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
-#include <TopTools_ListIteratorOfListOfShape.hxx>
-#include <TopTools_ListIteratorOfListOfShape.hxx>
+#if OCC_VERSION_HEX < 0x080000
+# include <TopTools_ListIteratorOfListOfShape.hxx>
+#endif
 #include <TopTools_ListOfShape.hxx>
 #include <TopTools_MapOfShape.hxx>
 
