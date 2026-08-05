@@ -466,19 +466,64 @@ syncs should diff the configure flags and `Part` residual patches against what's
 documented here — both drifted materially between the fork's previous sync and this
 one, and are likely to drift again.
 
-```bash
-cd /Users/user/dev/FreeCAD
-git fetch upstream
-git rebase upstream/main
-git push origin main
+### Syncing with upstream: the `/align-upstream` skill
+
+Upstream syncs are done with the **`align-upstream`** Claude Code project skill
+(`.claude/skills/align-upstream/SKILL.md`), which encodes the process that
+produced the 2026-08 sync. In a Claude Code session in this repo, run:
+
+```
+/align-upstream
 ```
 
-After rebasing, rebuild and reinstall only if C++ files changed:
+**What it does** (fully automated except two checkpoints):
+
+1. Captures a baseline elixifree test run on the current production binary —
+   parity against this baseline is the acceptance bar (pre-existing failures
+   don't block; new failures do).
+2. Pins an exact upstream `main` SHA, sizes the conflict surface with
+   `git merge-tree`, and merges on an isolated `sync/upstream-<date>` branch
+   using the fork's conflict-policy table (keep CI-trigger disables, verify
+   the CadClaude/TKDEGLTF/freecad-worker survival checklist, hand-inspect
+   anything unknown).
+3. Builds in an isolated `build-sync/` tree against the custom OCCT and
+   installs to `~/freecad-cadclaude-sync` — production `build/`,
+   `~/freecad-cadclaude`, and branches `main`/`feat/elixifree-core` are
+   never touched until all gates pass.
+4. Runs four gates: interpreter sanity boot, StdIO worker protocol smoke
+   (cross-checked against the READY line's build-identity hash), elixifree
+   suite parity diff, and the ElixiCAD `-m freecad` pytest suite parity diff.
+5. **Checkpoint 1 — asks you** before merging back and pushing to origin
+   (pushing `main` wakes the GitHub Actions workflows; see the Docker-build
+   caveat below).
+6. **Checkpoint 2 — asks you** before swapping the production install (the
+   old install is kept as `~/freecad-cadclaude-pre-sync-<date>` for instant
+   rollback; keep it about a week).
+7. Updates this document's sync-base line and any drifted configure flags.
+
+**Prerequisites**: clean tracked tree (WIP committed), the custom OCCT at
+`/Users/user/dev/OCCT/install`, and the Homebrew deps from
+[Prerequisites](#prerequisites). Expect roughly an hour wall-clock, dominated
+by the full build.
+
+**Rollback**: pre-merge, delete the sync branch/build dir/prefix — production
+never knew. Post-swap, swap the install directories back and
+`git revert -m 1 <merge-commit>`.
+
+**Known CI caveat**: pushing `main` triggers `build-docker.yml`, which
+currently fails for reasons unrelated to syncing (the container copies the
+`elixifree` symlink whose absolute target doesn't exist in the image, and it
+builds against Debian's OCCT). Don't read a red Docker badge as a sync
+regression.
+
+### Small fork-only changes (not an upstream sync)
+
+If only Python files in `src/Mod/CadClaude/` changed (no upstream merge, no
+C++ changes), you don't need the skill — just refresh the installed copy:
 
 ```bash
-cmake --build build --parallel
-cmake --install build --prefix ~/freecad-cadclaude
+cmake --install build-sync --prefix ~/freecad-cadclaude
 ```
 
-If only Python files in `src/Mod/CadClaude/` changed, you can skip the build
-and just re-run the install step.
+For fork-local C++ changes, rebuild in `build-sync/` first
+(`cmake --build build-sync --parallel`), then install.
