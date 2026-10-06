@@ -97,7 +97,12 @@ _occt_lib_on_path() {
     return 1
 }
 
-if ! { [ -n "${DYLD_LIBRARY_PATH:-}" ] && _occt_lib_on_path "$DYLD_LIBRARY_PATH"; } \
+# macOS only: otool and @rpath are Mach-O concepts. On Linux the probe below
+# would call a missing otool, and `set -euo pipefail` would end this script
+# with a silent exit 127 before FreeCAD starts (every Fly worker since
+# 2026-08-05). Linux resolves OCCT through the normal loader path.
+if [ "$(uname -s)" = "Darwin" ] \
+   && ! { [ -n "${DYLD_LIBRARY_PATH:-}" ] && _occt_lib_on_path "$DYLD_LIBRARY_PATH"; } \
    && ! ls "$_FREECAD_LIB_DIR" 2>/dev/null | grep -q "^${_OCCT_PROBE_LIB}\."; then
     _OCCT_LIB_DIR="${OCCT_LIB_DIR:-}"
 
@@ -108,7 +113,7 @@ if ! { [ -n "${DYLD_LIBRARY_PATH:-}" ] && _occt_lib_on_path "$DYLD_LIBRARY_PATH"
         _OCCT_DYLIB_NAME=""
         for _mod in "$_FREECAD_LIB_DIR"/*.so; do
             [ -f "$_mod" ] || continue
-            _ref="$(otool -L "$_mod" 2>/dev/null | awk -v p="$_OCCT_PROBE_LIB" '$1 ~ "@rpath/" p "\\." {print $1; exit}')"
+            _ref="$(otool -L "$_mod" 2>/dev/null | awk -v p="$_OCCT_PROBE_LIB" '$1 ~ "@rpath/" p "\\." {print $1; exit}' || true)"
             if [ -n "$_ref" ]; then
                 _OCCT_DYLIB_NAME="${_ref#@rpath/}"
                 break
