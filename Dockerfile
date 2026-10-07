@@ -70,6 +70,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     libtbb-dev \
     libfreetype-dev \
     libharfbuzz-dev \
+    libfontconfig-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js 22+ using official NodeSource binary distributions
