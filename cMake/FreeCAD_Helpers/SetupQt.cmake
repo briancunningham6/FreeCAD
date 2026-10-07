@@ -39,6 +39,13 @@ if(BUILD_GUI)
     endif()
 endif()
 
+# TechDraw's App library uses QtGui and QtWidgets types (QColor, QPen,
+# QApplication), so a headless build with TechDraw (which Draft requires)
+# still needs those two components.
+if(BUILD_TECHDRAW AND NOT BUILD_GUI)
+    list (APPEND FREECAD_QT_COMPONENTS Gui Widgets)
+endif()
+
 if (ENABLE_DEVELOPER_TESTS)
     list (APPEND FREECAD_QT_COMPONENTS Test)
 endif ()
