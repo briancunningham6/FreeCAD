@@ -270,6 +270,8 @@ The install layout will be:
       ...
 ```
 
+The install also writes `BUILD-INFO.json` at the prefix root (build-time versions, git state, toolchain). To diff two installs: `diff <(jq -S . a/BUILD-INFO.json) <(jq -S . b/BUILD-INFO.json)`.
+
 ---
 
 ## Connecting to cadClaude

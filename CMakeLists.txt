@@ -155,6 +155,8 @@ add_subdirectory(data)
 install(PROGRAMS scripts/freecad-worker
         DESTINATION bin)
 
+SetupBuildInfo()
+
 BuildAndInstallDesignerPlugin()
 
 CreatePackagingTargets()
