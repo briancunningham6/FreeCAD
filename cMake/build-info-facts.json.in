@@ -1,0 +1,24 @@
+{
+  "versions": {
+    "freecad": "@PACKAGE_VERSION@@PACKAGE_VERSION_SUFFIX@",
+    "occt": "@BUILD_INFO_OCC@",
+    "python": "@Python3_VERSION@",
+    "qt": "@Qt6Core_VERSION@",
+    "boost": "@Boost_VERSION@"
+  },
+  "toolchain": {
+    "platform": "@CMAKE_SYSTEM_NAME@-@CMAKE_SYSTEM_VERSION@-@CMAKE_SYSTEM_PROCESSOR@",
+    "compiler": "@CMAKE_CXX_COMPILER_ID@ @CMAKE_CXX_COMPILER_VERSION@",
+    "sdk": @BUILD_INFO_SDK@,
+    "generator": "@CMAKE_GENERATOR@",
+    "build_type": "@CMAKE_BUILD_TYPE@"
+  },
+  "options": {
+    "modules_on": @BUILD_INFO_MODULES_JSON@,
+    "flags": @BUILD_INFO_FLAGS_JSON@,
+    "occt_dirs": {
+      "include": "@OCC_INCLUDE_DIR@",
+      "lib": "@OCC_LIBRARY_DIR@"
+    }
+  }
+}
