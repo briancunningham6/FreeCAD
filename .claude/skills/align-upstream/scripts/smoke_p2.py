@@ -4,6 +4,7 @@ ElixiHub runs ElixiCAD's worker (FREECAD_WORKER_PY) with ELIXIFREE_PATH set, not
 the fork's own worker. Both are derived from --elixicad unless --no-worker-env.
 
 usage: smoke_p2.py <freecad-worker> [--elixicad ROOT] [--no-worker-env] [--expect-git SHA10]
+                    [--engine-out FILE]
 """
 import argparse
 import json
@@ -17,7 +18,10 @@ ap.add_argument("--elixicad", default="/Users/user/dev/ElixiCAD")
 ap.add_argument("--no-worker-env", action="store_true",
                 help="do not set FREECAD_WORKER_PY / ELIXIFREE_PATH (fork's own worker)")
 ap.add_argument("--expect-git", metavar="SHA10",
-                help="fail unless the ENGINE line's runtime.freecad_git equals this")
+                help="fail unless the ENGINE line's runtime.freecad_git equals this "
+                     "(and, when a manifest is present, it agrees)")
+ap.add_argument("--engine-out", metavar="FILE",
+                help="write the full ENGINE JSON (the part after 'ENGINE ') to FILE when present")
 args = ap.parse_args()
 
 env = {k: v for k, v in os.environ.items()
@@ -38,6 +42,9 @@ while True:
         break
     if line.startswith("ENGINE "):
         print("ENGINE line:", line[:300] + ("..." if len(line) > 300 else ""))
+        if args.engine_out:
+            with open(args.engine_out, "w", encoding="utf-8") as f:
+                f.write(line[len("ENGINE "):] + "\n")
         try:
             engine = json.loads(line[len("ENGINE "):])
         except ValueError:
@@ -73,7 +80,9 @@ p.wait(timeout=30)
 
 ok = bool(ready) and bool(out) and out[0] == "RESULT_START job-42" and out[-1] == "RESULT_END job-42"
 if args.expect_git:
-    got = ((engine or {}).get("runtime") or {}).get("freecad_git")
+    runtime = (engine or {}).get("runtime") or {}
+    manifest = (engine or {}).get("manifest")
+    got = runtime.get("freecad_git")
     if engine is None:
         print(f"EXPECT-GIT FAIL: no ENGINE line (wanted {args.expect_git})")
         ok = False
@@ -81,6 +90,20 @@ if args.expect_git:
         print(f"EXPECT-GIT FAIL: ENGINE runtime.freecad_git={got!r}, wanted {args.expect_git!r}")
         ok = False
     else:
-        print(f"EXPECT-GIT OK: {got}")
+        print(f"EXPECT-GIT OK: runtime.freecad_git={got}")
+        if isinstance(manifest, dict):
+            fork = manifest.get("fork")
+            mgit = fork.get("git") if isinstance(fork, dict) else None
+            if not (isinstance(mgit, str) and mgit.startswith(args.expect_git)):
+                print(f"EXPECT-GIT FAIL: manifest.fork.git={mgit!r} does not start with {args.expect_git!r}")
+                ok = False
+            elif runtime.get("manifest_matches_binary") is False:
+                print("EXPECT-GIT FAIL: runtime.manifest_matches_binary is False")
+                ok = False
+            else:
+                print(f"EXPECT-GIT OK: manifest.fork.git={mgit[:10]}, manifest_matches_binary="
+                      f"{runtime.get('manifest_matches_binary')}")
+        else:
+            print("WARNING: no manifest (pre-manifest install); checked runtime.freecad_git only")
 print("SMOKE P2:", "PASS" if ok else "FAIL")
 sys.exit(0 if ok else 1)

@@ -104,9 +104,11 @@ where branch switching between build and install touched 4,771 files.
 - **Install:** `install(FILES ${CMAKE_BINARY_DIR}/BUILD-INFO.json DESTINATION .)` next to the
   existing `freecad-worker` install rule in the root `CMakeLists.txt`.
 - **Upstream base:** don't depend on an `upstream` remote, because CI and Docker checkouts
-  don't have one. Use the sync merge convention instead: find the newest first-parent
-  ancestor whose subject matches `^Merge upstream FreeCAD main [0-9a-f]{7,}` and take its
-  second parent. This works in any full clone. If the history is shallow or no match is
+  don't have one. Use the sync merge convention instead: find the newest merge (any
+  parent path, `git log --merges`, newest first) whose subject matches
+  `^Merge upstream FreeCAD main [0-9a-f]{7,}` and take its second parent. Any parent path
+  is needed because sync branches are merged into the feature branch with `--no-ff`, so
+  the upstream merge sits on a second-parent side. This works in any full clone. If the history is shallow or no match is
   found, emit `null`. The align-upstream skill already writes merges in that form, so it
   only needs to keep doing so (added as a hard rule).
 - **Failure policy:** the generator never fails the build. On any error it writes a
