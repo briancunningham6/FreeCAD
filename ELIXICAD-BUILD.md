@@ -24,7 +24,11 @@ for background. What remains in `src/Mod/Part/App` after the sync is small:
   OCCT 8.0.0-rc4 build this fork targets — see
   [Step 3, Build the Part module first](#3-build-the-part-module-first) below.
 
-**Fork synced to upstream `d648b7b5ae` (2026-08-04).**
+**Fork synced to upstream `d170797279` (2026-11-10).** Previous sync: `d648b7b5ae`
+(2026-08-04). The 2026-11 sync merged cleanly in `src/Mod/Part/App`; the residual
+patches and rc4 guard above all survived unchanged. It moved FreeCAD from 26.3.0
+to 27.1.0 (upstream dropped Qt5 and OCCT < 7.6 support); embedded Python (3.13.5),
+Qt (6.11.1) and OCCT (8.0.0-rc4) were unchanged.
 
 This means:
 
@@ -121,15 +125,15 @@ git submodule update --init --recursive
 
 ### 2. Configure
 
-This is the configuration that produced the working build after the 2026-08 upstream
-sync (fork synced to upstream `d648b7b5ae`). It targets headless use (no GUI) and
+This is the configuration that produced the working build after the 2026-11 upstream
+sync (fork synced to upstream `d170797279`). It targets headless use (no GUI) and
 uses the custom OCCT. The FEM pipeline drives gmsh and ccx directly from Python —
 FreeCAD's FEM/Mesh modules are not needed and must be kept OFF:
 
 ```bash
 cmake -S . -B build \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_OSX_SYSROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk \
+  -DCMAKE_OSX_SYSROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk \
   -DENABLE_DEVELOPER_TESTS=OFF \
   -DBUILD_GUI=OFF \
   -DBUILD_FEM=OFF \
@@ -180,10 +184,14 @@ cmake -S . -B build \
 > fork's custom OCCT build and is not needed by cadClaude (STEP export uses
 > `shape.exportStep()` directly from Part).
 >
-> `CMAKE_OSX_SYSROOT` — must point to the stable MacOSX15.x SDK, not the beta.
-> The beta SDK (`MacOSX26.x`) is missing `libz.tbd`, causing linker failures in
-> FreeCADBase. Use `xcodebuild -showsdks` to list available SDKs and pick the
-> highest stable `macosx15.x` entry.
+> `CMAKE_OSX_SYSROOT` — must point to a stable SDK that ships `usr/lib/libz.tbd`
+> (early `MacOSX26.x` betas lacked it, causing linker failures in FreeCADBase).
+> As of the 2026-11 sync the Command Line Tools no longer ship MacOSX15.4; the
+> build uses `MacOSX26.5.sdk` (matches the macOS 26.x host). Avoid an SDK newer
+> than the running OS (e.g. `MacOSX27.0`). List what is installed with
+> `ls /Library/Developer/CommandLineTools/SDKs/` and confirm
+> `<sdk>/usr/lib/libz.tbd` exists. The default generator (Unix Makefiles) is
+> used; Ninja is not installed.
 >
 > `BUILD_ASSEMBLY=OFF` — requires `BUILD_SPREADSHEET=ON`; neither needed for cadClaude.
 >
@@ -458,7 +466,11 @@ for simple shapes (vs 5000–10000ms previously).
 
 ## Keeping the fork up to date
 
-**Fork synced to upstream `d648b7b5ae` (2026-08-04).** That sync merged (rather than
+**Fork synced to upstream `d170797279` (2026-11-10).** Previous sync: `d648b7b5ae`
+(2026-08-04). The 2026-11 sync merged cleanly in `src/Mod/Part/App`; the residual
+patches and rc4 guard above all survived unchanged. It moved FreeCAD from 26.3.0
+to 27.1.0 (upstream dropped Qt5 and OCCT < 7.6 support); embedded Python (3.13.5),
+Qt (6.11.1) and OCCT (8.0.0-rc4) were unchanged. That sync merged (rather than
 rebased) ~1,700 upstream commits, including upstream's official OCCT 7/8 support,
 which superseded this fork's old bespoke OCCT-RC patch set (see
 [Overview](#overview) and `OCCT_RC_PATCH_NOTES.md`'s historical banner). Future
