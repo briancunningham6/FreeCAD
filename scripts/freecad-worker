@@ -63,7 +63,14 @@ _FREECAD_LIB_DIR="$_FREECAD_INSTALL_DIR/lib"
 _CONDA_LIB_DIR="${CONDA_PREFIX:-$HOME/miniforge3}/lib"
 
 if [ -d "$_FREECAD_LIB_DIR" ] || [ -d "$_CONDA_LIB_DIR" ]; then
-    export DYLD_LIBRARY_PATH="${_FREECAD_LIB_DIR}:${_CONDA_LIB_DIR}${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+    export DYLD_LIBRARY_PATH="${_FREECAD_LIB_DIR}${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}"
+    # Conda libs only as a FALLBACK. As a primary path, conda's libblas.dylib
+    # shadows Accelerate's libBLAS (dyld matches by leaf name; the filesystem
+    # is case-insensitive), so numpy fails to import inside the worker
+    # (_cblas_caxpy$NEWLAPACK$ILP64 not found). Fallback is only searched for
+    # libraries not found at their install path, so FreeCAD's @rpath deps
+    # (Qt6 etc.) still resolve from conda.
+    export DYLD_FALLBACK_LIBRARY_PATH="${_CONDA_LIB_DIR}${DYLD_FALLBACK_LIBRARY_PATH:+:$DYLD_FALLBACK_LIBRARY_PATH}:/usr/local/lib:/usr/lib"
 fi
 
 # ── Custom OCCT lib dir (only when needed) ───────────────────────────────────

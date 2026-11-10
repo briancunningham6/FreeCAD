@@ -23,6 +23,7 @@ import re
 import traceback
 import io
 import json
+import time
 
 
 def _redirect_freecad_noise():
@@ -36,8 +37,21 @@ def _redirect_freecad_noise():
     # Point fd 1 at stderr so C-level writes go there
     os.dup2(2, 1)
     # Python stdout now needs to write to the original fd
-    protocol_out = os.fdopen(original_stdout_fd, "w", buffering=1)
-    return protocol_out
+    return _open_protocol_stream(original_stdout_fd)
+
+
+def _open_protocol_stream(fd):
+    """
+    Wrap the protocol fd as a UTF-8 text stream, whatever locale the worker
+    inherited. Left to the default, the encoding follows the locale, and under
+    a LaunchAgent with no LANG the embedded interpreter's preferred encoding is
+    ASCII: the first script whose output carried an em-dash ("NORMALIZE:… —
+    applying yaw=90") killed the worker with UnicodeEncodeError while writing
+    RESULT_START, and every assembly build on the hybrid deployment failed
+    with "worker exited unexpectedly (code 1)". errors="replace" so nothing a
+    script prints can take the protocol down.
+    """
+    return os.fdopen(fd, "w", buffering=1, encoding="utf-8", errors="replace")
 
 
 def _readline():
@@ -196,8 +210,55 @@ def _fix_common_mistakes(script_source):
     return script_source
 
 
+_ELIXIFREE_SIGNATURE = None
+
+
+def _elixifree_signature(path=None):
+    """Newest mtime across the elixifree package's .py files, or None if unknown."""
+    root = path
+    if root is None:
+        mod = sys.modules.get("elixifree")
+        root = getattr(mod, "__path__", [None])[0] if mod else None
+    if not root or not os.path.isdir(root):
+        return None
+    newest = 0.0
+    for dirpath, _dirs, files in os.walk(root):
+        for name in files:
+            if name.endswith(".py"):
+                try:
+                    newest = max(newest, os.path.getmtime(os.path.join(dirpath, name)))
+                except OSError:
+                    pass
+    return newest
+
+
+def _purge_stale_elixifree(path=None):
+    """
+    Drop cached `elixifree*` modules when their source has changed on disk.
+
+    Workers are long-lived, so a fix to elixifree would otherwise keep being
+    planned with the OLD code until the pool restarts — the hardening campaign
+    of 2026-09-06 built walls without spline grooves for exactly that reason.
+    Returns True when modules were purged.
+    """
+    global _ELIXIFREE_SIGNATURE
+    sig = _elixifree_signature(path)
+    if sig is None:
+        return False
+    if _ELIXIFREE_SIGNATURE is not None and sig != _ELIXIFREE_SIGNATURE:
+        stale = [m for m in sys.modules if m == "elixifree" or m.startswith("elixifree.")]
+        for m in stale:
+            del sys.modules[m]
+        _ELIXIFREE_SIGNATURE = sig
+        sys.stderr.write(f"elixifree source changed on disk — reloaded {len(stale)} module(s)\n")
+        return True
+    _ELIXIFREE_SIGNATURE = sig
+    return False
+
+
 def _exec_once(script_source):
     """Execute script_source once, capturing stdout/stderr. Returns (output, error)."""
+    _purge_stale_elixifree()
     old_stdout = sys.stdout
     old_stderr = sys.stderr
     captured = io.StringIO()
@@ -232,10 +293,46 @@ def _close_open_documents():
         pass
 
 
+def _rusage_snapshot():
+    """(cpu_user_s, cpu_sys_s, peak_rss_bytes) for this process, or None."""
+    try:
+        import resource
+
+        usage = resource.getrusage(resource.RUSAGE_SELF)
+        peak = usage.ru_maxrss
+        if sys.platform != "darwin":
+            peak *= 1024  # Linux reports KiB; macOS reports bytes
+        return usage.ru_utime, usage.ru_stime, peak
+    except Exception:  # noqa: BLE001 — metrics are best-effort (no `resource` on Windows)
+        return None
+
+
+def _metrics_line(started_at, usage_before):
+    """
+    One `CADCLAUDE_METRICS: {json}` line for the Elixir side.
+
+    `Elixihub.FreeCAD.Worker.extract_metrics/1` strips this line from the
+    script output and `Executor` records it on the lifecycle event. Until this
+    existed the only timing was Elixir's `duration_ms`, measured from BEFORE
+    pool admission — a script queued for three minutes behind a busy pool was
+    indistinguishable from one that ran for three minutes (project 79c193f4).
+    `process_rss_mb` is the process PEAK (ru_maxrss), the number that matters
+    for sizing worker memory.
+    """
+    metrics = {"wall_ms": int((time.monotonic() - started_at) * 1000)}
+    usage_after = _rusage_snapshot()
+    if usage_before is not None and usage_after is not None:
+        metrics["cpu_user_ms"] = int((usage_after[0] - usage_before[0]) * 1000)
+        metrics["cpu_sys_ms"] = int((usage_after[1] - usage_before[1]) * 1000)
+        metrics["process_rss_mb"] = int(usage_after[2] / (1024 * 1024))
+    return "\nCADCLAUDE_METRICS: " + json.dumps(metrics) + "\n"
+
+
 def _run_script(script_source):
     """
     Execute script_source, capturing stdout/stderr.
-    Returns (output, error) where error is None on success.
+    Returns (output, error) where error is None on success. The output always
+    ends with a `CADCLAUDE_METRICS:` line (wall/cpu/peak-rss), on error too.
     Also closes any FreeCAD documents left open by the script (cleanup
     after crashes that skip FreeCAD.closeDocument).
 
@@ -247,6 +344,9 @@ def _run_script(script_source):
     retried once from scratch. See _rewrite_add_to_doc_call for why this must
     happen after the failure, not as a source-level pre-pass.
     """
+    started_at = time.monotonic()
+    usage_before = _rusage_snapshot()
+
     script_source = _fix_common_mistakes(script_source)
     output, error = _exec_once(script_source)
 
@@ -257,7 +357,7 @@ def _run_script(script_source):
             output, error = _exec_once(rewritten)
 
     _close_open_documents()
-    return output, error
+    return output + _metrics_line(started_at, usage_before), error
 
 
 def _write(protocol_out, *lines):
