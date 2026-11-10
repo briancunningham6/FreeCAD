@@ -70,6 +70,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     libtbb-dev \
     libfreetype-dev \
     libharfbuzz-dev \
+    libfontconfig-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js 22+ using official NodeSource binary distributions
@@ -96,7 +97,7 @@ RUN cmake -S /src -B /build \
     -DBUILD_SKETCHER=ON \
     -DBUILD_MATERIAL=ON \
     \
-    -DBUILD_MESH=OFF \
+    -DBUILD_MESH=ON \
     -DBUILD_MESH_PART=OFF \
     -DBUILD_FLAT_MESH=OFF \
     -DBUILD_FEM=OFF \
@@ -106,11 +107,11 @@ RUN cmake -S /src -B /build \
     -DBUILD_ADDONMGR=OFF \
     -DBUILD_ARCH=OFF \
     -DBUILD_BIM=OFF \
-    -DBUILD_DRAFT=OFF \
+    -DBUILD_DRAFT=ON \
     -DBUILD_HELP=OFF \
-    -DBUILD_IMPORT=OFF \
+    -DBUILD_IMPORT=ON \
     -DBUILD_INSPECTION=OFF \
-    -DBUILD_MEASURE=OFF \
+    -DBUILD_MEASURE=ON \
     -DBUILD_OPENSCAD=OFF \
     -DBUILD_PATH=OFF \
     -DBUILD_PLOT=OFF \
@@ -119,10 +120,10 @@ RUN cmake -S /src -B /build \
     -DBUILD_ROBOT=OFF \
     -DBUILD_SHIP=OFF \
     -DBUILD_SHOW=OFF \
-    -DBUILD_SPREADSHEET=OFF \
+    -DBUILD_SPREADSHEET=ON \
     -DBUILD_START=OFF \
     -DBUILD_SURFACE=OFF \
-    -DBUILD_TECHDRAW=OFF \
+    -DBUILD_TECHDRAW=ON \
     -DBUILD_TEST=OFF \
     -DBUILD_TUX=OFF \
     -DBUILD_WEB=OFF \
