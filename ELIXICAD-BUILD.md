@@ -272,6 +272,27 @@ The install layout will be:
 
 The install also writes `BUILD-INFO.json` at the prefix root (build-time versions, git state, toolchain). To diff two installs: `diff <(jq -S . a/BUILD-INFO.json) <(jq -S . b/BUILD-INFO.json)`.
 
+### 6. Deploying: which build reaches which machine
+
+Every target gets FreeCAD through exactly one route. Each route takes the engine from fork `main` only:
+
+| Target | Route | What it ships |
+|---|---|---|
+| This Mac (`~/freecad-cadclaude`) | `/align-upstream` step 7 (the install swap) | the sync's verified prefix |
+| Mac mini (production) | ElixiCAD `scripts/build.sh`, then `scripts/deploy.sh` | `cmake --install` from **`build-current`** |
+| Fly workers | ElixiCAD `Dockerfile` `FREECAD_IMAGE` pin, bumped in a PR | the fork image `sha-<commit>` from `build-docker.yml` |
+
+`build-current` is a git-ignored symlink in the repo root that names the production build tree, for example `build-current -> build-sync`. CMake build directories can't be renamed, because their caches hold absolute paths, so the pointer is moved instead. Only `/align-upstream` step 7 repoints it.
+
+ElixiCAD's `build.sh` checks `build-current/BUILD-INFO.json` before packaging, and stops if:
+- the manifest is missing,
+- it shows uncommitted changes, or
+- its commit isn't the fork's `origin/main`.
+
+Run `git fetch` in this repo first. `ALLOW_UNRELEASED_FREECAD=1` overrides the check, and the override shows in the build output.
+
+After any deploy, check what's live with `python3 -I .claude/skills/align-upstream/scripts/smoke_p2.py <prefix>/bin/freecad-worker --expect-git $(git rev-parse origin/main | cut -c1-10)`, or open ElixiHub Settings → FreeCAD engine.
+
 ---
 
 ## Connecting to cadClaude
