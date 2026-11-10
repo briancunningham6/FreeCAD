@@ -332,6 +332,22 @@ public:
   virtual Property *getPropertyByName(const char* name) const;
 
   /**
+   * @brief Get the canonical property name.
+   *
+   * Some property containers may have alternative names for the same property.
+   * This method returns the canonical name of the property or an empty string
+   * if the property container has no knowledge of a canonical or alternative
+   * property name.
+   *
+   * @param[in] name The name of the property to find the canonical name for.
+   * @return The canonical name of the property, or an empty string if not found.
+   */
+  virtual std::string getCanonicalPropertyName(const char* /*name*/) const
+  {
+      return {};
+  }
+
+  /**
    * @brief Get the name of a property.
    *
    * @param[in] prop The property to get the name for.
@@ -520,7 +536,7 @@ public:
    * @return `true` if the update was successful; `false` otherwise.
    */
   bool changeDynamicProperty(const Property *prop, const char *group, const char *doc) {
-      return dynamicProps.changeDynamicProperty(prop,group,doc);
+      return dynamicProps.changeDynamicProperty(prop, group, doc);
   }
 
   /**
@@ -533,7 +549,7 @@ public:
    * @throw Base::NameError If the new name is invalid or already exists.
    */
   virtual bool renameDynamicProperty(Property *prop, const char *name) {
-      return dynamicProps.renameDynamicProperty(prop,name);
+      return dynamicProps.renameDynamicProperty(prop, name);
   }
 
   /**

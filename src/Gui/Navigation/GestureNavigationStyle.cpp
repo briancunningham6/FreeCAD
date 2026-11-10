@@ -76,6 +76,7 @@
 #include <App/Application.h>
 #include <Base/Interpreter.h>
 #include <Base/Console.h>
+#include <Base/Tools.h>
 
 #include "GestureNavigationStyle.h"
 #include "Application.h"
@@ -122,7 +123,7 @@ public:
             Base::Console().log("button3 release ");
         }
         if (isMouseButtonEvent()) {
-            Base::Console().log("%x", modifiers);
+            Base::Console().log("{:x}", modifiers);
         }
         if (isGestureEvent()) {
             Base::Console().log("Gesture ");
@@ -140,11 +141,11 @@ public:
                     Base::Console().log("??? ");
             }
 
-            Base::Console().log(inventor_event->getTypeId().getName().getString());
+            Base::Console().log("{}", inventor_event->getTypeId().getName().getString());
         }
         if (isMouseButtonEvent() || isGestureEvent()) {
             Base::Console().log(
-                "(%i,%i)\n",
+                "({},{})\n",
                 inventor_event->getPosition()[0],
                 inventor_event->getPosition()[1]
             );
@@ -765,7 +766,6 @@ public:
 private:
     SbVec2s base_pos;
     float ratio;
-    bool enableTilt = false;
 
 public:
     explicit GestureState(my_context ctx)
@@ -780,9 +780,6 @@ public:
         }
         ns.setupPanningPlane(ns.viewer->getSoRenderManager()->getCamera());  // set up panningplane
         this->ratio = ns.viewer->getSoRenderManager()->getViewportRegion().getViewportAspectRatio();
-        enableTilt = !(App::GetApplication()
-                           .GetParameterGroupByPath("User parameter:BaseApp/Preferences/View")
-                           ->GetBool("DisableTouchTilt", true));
     }
     virtual ~GestureState()
     {
@@ -832,27 +829,7 @@ public:
                 );
             }
             else if (ev.inventor_event->isOfType(SoGesturePinchEvent::getClassTypeId())) {
-                const auto pinch = static_cast<const SoGesturePinchEvent*>(ev.inventor_event);
-                SbVec2f panDist = ns.normalizePixelPos(pinch->deltaCenter.getValue());
-                ns.panCamera(
-                    ns.viewer->getSoRenderManager()->getCamera(),
-                    ratio,
-                    ns.panningplane,
-                    panDist,
-                    SbVec2f(0, 0)
-                );
-                ns.doZoom(
-                    ns.viewer->getSoRenderManager()->getCamera(),
-                    -logf(float(pinch->deltaZoom)),
-                    ns.normalizePixelPos(pinch->curCenter)
-                );
-                if (pinch->deltaAngle != 0.0 && enableTilt) {
-                    ns.doRotate(
-                        ns.viewer->getSoRenderManager()->getCamera(),
-                        float(pinch->deltaAngle),
-                        ns.normalizePixelPos(pinch->curCenter)
-                    );
-                }
+                ns.processPinchEvent(static_cast<const SoGesturePinchEvent*>(ev.inventor_event));
             }
             else {
                 // unknown gesture
@@ -1074,6 +1051,11 @@ SbBool GestureNavigationStyle::processSoEvent(const SoEvent* const ev)
 
 
     if (!smev.flags->processed) {
+        // a dialog opened while replaying postponed events must not re-enter the state machine
+        if (inNaviMachine) {
+            return superclass::processSoEvent(ev);
+        }
+        Base::StateLocker lock(inNaviMachine);
         this->naviMachine->processEvent(smev);
     }
     if (!smev.flags->propagated && !smev.flags->processed) {
@@ -1128,8 +1110,8 @@ void GestureNavigationStyle::onRollGesture(int direction)
     catch (...) {
         Base::Console().error(
             "GestureNavigationStyle::onRollGesture: unknown C++ exception when invoking command "
-            "%s\n",
-            cmd.c_str()
+            "{}\n",
+            cmd
         );
     }
 }

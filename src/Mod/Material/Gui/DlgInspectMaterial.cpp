@@ -168,7 +168,7 @@ void DlgInspectMaterial::update(std::vector<Gui::ViewProvider*>& views)
             else {
                 ui->editObjectLabel->setText(QStringLiteral(""));
             }
-            ui->editObjectName->setText(QLatin1String(obj->getNameInDocument()));
+            ui->editObjectName->setText(QString::fromUtf8(obj->getNameInDocument()));
             appendClip(tr("Internal name: ") + QString::fromUtf8(obj->getNameInDocument()));
 
             auto subElement = Gui::Selection().getSelectionEx();
@@ -205,7 +205,7 @@ void DlgInspectMaterial::update(std::vector<Gui::ViewProvider*>& views)
 
 void DlgInspectMaterial::updateMaterialTree(const Materials::Material& material)
 {
-    Base::Console().log("Material '%s'\n", material.getName().toStdString().c_str());
+    Base::Console().log("Material '{}'\n", material.getName().toStdString());
 
     auto tree = ui->treeMaterials;
     auto model = qobject_cast<QStandardItemModel*>(tree->model());

@@ -1,27 +1,23 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
+# SPDX-FileCopyrightText: 2018 Yorik van Havre
+# SPDX-FileNotice: Part of the FreeCAD project.
 
-# ***************************************************************************
-# *                                                                         *
-# *   Copyright (c) 2018 Yorik van Havre <yorik@uncreated.net>              *
-# *                                                                         *
-# *   This file is part of FreeCAD.                                         *
-# *                                                                         *
-# *   FreeCAD is free software: you can redistribute it and/or modify it    *
-# *   under the terms of the GNU Lesser General Public License as           *
-# *   published by the Free Software Foundation, either version 2.1 of the  *
-# *   License, or (at your option) any later version.                       *
-# *                                                                         *
-# *   FreeCAD is distributed in the hope that it will be useful, but        *
-# *   WITHOUT ANY WARRANTY; without even the implied warranty of            *
-# *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      *
-# *   Lesser General Public License for more details.                       *
-# *                                                                         *
-# *   You should have received a copy of the GNU Lesser General Public      *
-# *   License along with FreeCAD. If not, see                               *
-# *   <https://www.gnu.org/licenses/>.                                      *
-# *                                                                         *
-# ***************************************************************************
-
+################################################################################
+#                                                                              #
+#   FreeCAD is free software: you can redistribute it and/or modify            #
+#   it under the terms of the GNU Lesser General Public License as             #
+#   published by the Free Software Foundation, either version 2.1              #
+#   of the License, or (at your option) any later version.                     #
+#                                                                              #
+#   FreeCAD is distributed in the hope that it will be useful,                 #
+#   but WITHOUT ANY WARRANTY; without even the implied warranty                #
+#   of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                    #
+#   See the GNU Lesser General Public License for more details.                #
+#                                                                              #
+#   You should have received a copy of the GNU Lesser General Public           #
+#   License along with FreeCAD. If not, see https://www.gnu.org/licenses       #
+#                                                                              #
+################################################################################
 
 """The BIM Box command"""
 
@@ -310,11 +306,21 @@ class BIM_Box:
         self.doc.recompute()
 
     def _finish(self):
-        self.wp._restore()
+        # If the height of the box is entered numerically, this function triggers the
+        # cancel function of FreeCADGui.Snapper.getPoint. That function in turn triggers
+        # self.PointCallback with point=None, which triggers this function again.
+        # To avoid processing twice we check FreeCAD.activeDraftCommand:
+        if FreeCAD.activeDraftCommand is None:
+            return
+
         FreeCAD.activeDraftCommand = None
-        FreeCADGui.Snapper.off()
+        self.wp._restore()
         for c in self.cubetracker:
             c.finalize()
+        FreeCADGui.Snapper.off()
+        # Trigger cancel function of FreeCADGui.Snapper.getPoint:
+        if hasattr(FreeCADGui, "draftToolBar"):
+            FreeCADGui.draftToolBar.escape()
 
 
 FreeCADGui.addCommand("BIM_Box", BIM_Box())
