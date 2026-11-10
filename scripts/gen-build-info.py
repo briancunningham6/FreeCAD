@@ -61,7 +61,7 @@ def _to_utc_z(iso):
 
 def upstream_base(srcdir):
     none = {"base": None, "base_date": None}
-    out = _git(srcdir, "log", "--first-parent", "--merges",
+    out = _git(srcdir, "log", "--merges",
                "--format=%H%x00%P%x00%s")
     if not out:
         return none

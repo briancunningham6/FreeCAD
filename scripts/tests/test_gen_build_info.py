@@ -138,3 +138,25 @@ def test_cli_always_exits_zero(tmp_path):
     data = json.loads(out.read_text())
     assert "error" in data and data["schema"] == 1
     assert r.stdout.strip() == "BUILD-INFO.json: updated"
+
+
+def test_upstream_base_through_nested_merge(repo):
+    git(repo, "checkout", "-q", "-b", "sync")
+    git(repo, "checkout", "-q", "--orphan", "U")
+    git(repo, "rm", "-rq", "--cached", ".")
+    (repo / "u.txt").write_text("upstream\n")
+    git(repo, "add", "u.txt")
+    git(repo, "commit", "-q", "-m", "upstream commit")
+    u = git(repo, "rev-parse", "HEAD")
+    git(repo, "checkout", "-q", "-f", "sync")
+    git(repo, "merge", "-q", "--allow-unrelated-histories", "-m",
+        f"Merge upstream FreeCAD main {u[:10]}", "U")
+    git(repo, "checkout", "-q", "-f", "main")
+    (repo / "m.txt").write_text("main\n")
+    git(repo, "add", "m.txt")
+    git(repo, "commit", "-q", "-m", "main commit")
+    git(repo, "merge", "-q", "--no-ff", "sync", "-m", "Merge branch 'sync'")
+    (repo / "z.txt").write_text("z\n")
+    git(repo, "add", "z.txt")
+    git(repo, "commit", "-q", "-m", "after")
+    assert gbi.upstream_base(str(repo))["base"] == u
